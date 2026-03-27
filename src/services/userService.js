@@ -2,7 +2,7 @@ import { supabase } from '../supabaseClient';
 
 const UserService = {
   getAll: async () => {
-    const { data, error } = await supabase.from('users').select('*');
+    const { data, error } = await supabase.from('users').select('*').order('fullname', { ascending: true });
     if (error) throw error;
     return data.map(u => ({
       ...u,
@@ -28,7 +28,8 @@ const UserService = {
       password: user.password,
       fullname: user.fullName || user.fullname, 
       role: user.role,
-      department: user.department || null
+      department: user.department || null,
+      has_admin_access: false
     };
 
     const { data, error } = await supabase.from('users').insert([payload]).select();
@@ -39,14 +40,11 @@ const UserService = {
   update: async (id, updates) => {
     const payload = { ...updates };
     
-    // 1. 'fullname' nomini to'g'irlaymiz
     if (payload.fullName || payload.fullname) {
       payload.fullname = payload.fullName || payload.fullname;
       delete payload.fullName;
     }
 
-    // 2. MUHIM HIMOYA: Agar parol bo'sh bo'lsa, uni updates'dan o'chirib tashlaymiz
-    // Shunda Supabase eski parolni saqlab qoladi
     if (payload.hasOwnProperty('password') && (!payload.password || payload.password.trim() === "")) {
       delete payload.password;
     }

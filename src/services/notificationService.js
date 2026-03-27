@@ -1,9 +1,7 @@
 import { supabase } from '../supabaseClient';
 
 const NotificationService = {
-  // Yangi bildirishnoma yaratish va barcha userlarga tarqatish
   add: async (notifData, allUserIds) => {
-    // 1. Asosiy bildirishnoma
     const { data: newNotif, error: notifError } = await supabase
       .from('notifications')
       .insert([{
@@ -16,7 +14,6 @@ const NotificationService = {
 
     if (notifError) throw notifError;
 
-    // 2. Barcha userlarga "unread" qilib bog'lab chiqish
     const relations = allUserIds.map(uid => ({
       user_id: uid,
       notification_id: newNotif.id,
@@ -28,7 +25,6 @@ const NotificationService = {
     return newNotif;
   },
 
-  // Foydalanuvchi uchun bildirishnomalarni olish (TEPADA CHIQISHI UCHUN TARTIBLANDI)
   getByUser: async (userId) => {
     const { data, error } = await supabase
       .from('user_notifications')
@@ -38,7 +34,6 @@ const NotificationService = {
         notifications (*)
       `)
       .eq('user_id', userId)
-      // created_at bo'yicha teskari tartibda (DESC) saralash:
       .order('created_at', { foreignTable: 'notifications', ascending: false });
 
     if (error) throw error;

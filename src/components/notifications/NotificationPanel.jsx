@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useApp } from '../../contexts/AppContext';
-import { Bell, CheckCheck, Plus, Edit, Trash2, UserPlus, UserMinus, FolderPlus, X } from 'lucide-react';
+import { Bell, Plus, Edit, Trash2, UserPlus, UserMinus, FolderPlus, X, Send, CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { uz } from 'date-fns/locale';
 
@@ -29,7 +29,6 @@ export default function NotificationPanel({ onClose }) {
   const { notifications, markNotifRead, markAllNotifRead, t } = useApp();
   const ref = useRef(null);
 
-  // Ma'lumotlarni vaqt bo'yicha yana bir bor tekshirib saralaymiz (Eng yangisi tepada)
   const sortedNotifications = [...notifications].sort((a, b) => 
     new Date(b.createdAt) - new Date(a.createdAt)
   );
@@ -45,25 +44,61 @@ export default function NotificationPanel({ onClose }) {
   return (
     <div
       ref={ref}
-      className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] shadow-2xl z-50 animate-fade-in overflow-hidden"
+      className="absolute right-0 top-full mt-3 w-[400px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[1.2rem] shadow-2xl z-50 animate-fade-in overflow-hidden"
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20">
-        <h3 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-widest">{t.notifications}</h3>
-        <div className="flex items-center gap-2">
+      {/* HEADER - Yanada toza layout */}
+      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between">
+        <div>
+          <h3 className="font-black text-slate-900 dark:text-white text-xs uppercase tracking-widest">
+            {t.notifications}
+          </h3>
+          <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+             {notifications.filter(n => !n.read).length} ta yangi
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
           {notifications.some(n => !n.read) && (
-            <button onClick={markAllNotifRead} className="text-[10px] font-black text-primary-500 hover:text-primary-600 uppercase">
-              {t.markAllRead}
+            <button 
+              onClick={markAllNotifRead} 
+              className="p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 rounded-lg transition-colors group relative"
+              title={t.markAllRead}
+            >
+              <CheckCheck size={18} />
+              {/* Tooltip text - xohlasangiz */}
             </button>
           )}
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400"><X size={14}/></button>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 rounded-lg">
+            <X size={18}/>
+          </button>
         </div>
       </div>
+
+      {/* TELEGRAM BANNER - Ichkariga padding bilan "Card" ko'rinishida */}
+      <div className="px-4 py-3">
+        <a 
+          href="https://t.me/+RyIHMrYO0wUyMzgy" 
+          target="_blank" 
+          rel="noreferrer"
+          className="flex items-center gap-4 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl hover:shadow-lg hover:scale-[1.01] transition-all"
+        >
+          <div className="bg-white/20 p-2.5 rounded-xl shadow-inner">
+            <Send size={18} className="rotate-12" />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-tight">Telegram Guruh</p>
+            <p className="text-[10px] opacity-90 leading-tight">Yangi xabarlarni guruhda kuzating</p>
+          </div>
+        </a>
+      </div>
       
-      <div className="max-h-96 overflow-y-auto custom-scrollbar">
+      {/* LIST - Paddinglar ko'paytirildi */}
+      <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
         {sortedNotifications.length === 0 ? (
-          <div className="flex flex-col items-center py-12 text-slate-400">
-            <Bell size={40} className="mb-2 opacity-20" />
-            <p className="text-xs font-bold uppercase tracking-tighter">Bildirishnomalar yo'q</p>
+          <div className="flex flex-col items-center py-16 text-slate-400">
+            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mb-4">
+               <Bell size={32} className="opacity-20" />
+            </div>
+            <p className="text-[11px] font-black uppercase tracking-widest">Bildirishnomalar yo'q</p>
           </div>
         ) : (
           sortedNotifications.map(notif => {
@@ -73,28 +108,39 @@ export default function NotificationPanel({ onClose }) {
               <button
                 key={notif.id}
                 onClick={() => markNotifRead(notif.id)}
-                className={`w-full flex items-start gap-3 px-4 py-4 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors text-left ${!notif.read ? 'bg-primary-500/5' : ''}`}
+                className={`w-full flex items-start gap-4 px-5 py-5 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-all text-left group ${!notif.read ? 'bg-primary-500/[0.03]' : ''}`}
               >
-                <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${colorClass} shadow-sm`}>
-                  <Icon size={16} />
+                <div className={`flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center ${colorClass} shadow-sm group-hover:scale-110 transition-transform`}>
+                  <Icon size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold leading-tight mb-1 ${!notif.read ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
-                    {notif.title}
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className={`text-[13px] font-bold leading-tight truncate ${!notif.read ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                      {notif.title}
+                    </p>
+                    {!notif.read && (
+                      <div className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(76,110,245,0.6)]" />
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-2 leading-relaxed mb-2 tracking-tight">
+                    {notif.message}
                   </p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-2 mb-2">{notif.message}</p>
-                  <p className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter">
+                  <p className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-tighter">
                     {notif.createdAt ? formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: uz }) : ''}
                   </p>
                 </div>
-                {!notif.read && (
-                  <div className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0 mt-2 shadow-[0_0_8px_rgba(76,110,245,0.6)]" />
-                )}
               </button>
             );
           })
         )}
       </div>
+
+      {/* FOOTER - Qo'shimcha (ixtiyoriy) */}
+      {sortedNotifications.length > 0 && (
+        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/20 text-center border-t border-slate-100 dark:border-slate-700">
+           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[2px]">TaskFlow Notifications</p>
+        </div>
+      )}
     </div>
   );
 }

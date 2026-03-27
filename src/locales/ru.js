@@ -14,16 +14,26 @@ export const ru = {
   loading: "Загрузка...",
   confirm: "Подтвердить",
   actions: "Действия",
+  you: "Вы",
+  understand: "Понятно",
 
-  // Auth
+  // Auth & Login
   login: "Войти",
   logout: "Выйти",
-  username: "Имя пользователя",
+  username: "Логин",
   password: "Пароль",
-  loginTitle: "Добро пожаловать в TaskFlow",
-  loginSubtitle: "Войдите в свой аккаунт",
-  loginBtn: "Войти",
+  loginTitle: "Добро пожаловать!",
+  loginSubtitle: "Войдите в систему, чтобы продолжить работу.",
+  loginBtn: "Войти в систему",
   invalidCredentials: "Неверный логин или пароль",
+  usernamePlaceholder: "Введите логин",
+  passwordPlaceholder: "Введите пароль",
+  recoveryPassword: "Забыли пароль?",
+  processing: "Загрузка...",
+  imageOverlayText: "Все задачи в единой системе.",
+  errorUserNotFound: "Пользователь не найден.",
+  errorWrongPassword: "Неверный пароль. Попробуйте еще раз.",
+  errorAuthFailed: "Ошибка при входе в систему.",
 
   // Nav
   dashboard: "Главная",
@@ -42,119 +52,7 @@ export const ru = {
   todayTasks: "Задачи на сегодня",
   upcomingDeadlines: "Ближайшие дедлайны",
   recentActivity: "Последняя активность",
-  welcomeBack: "Добро пожаловать",
-
-  // Tasks
-  addTask: "Добавить задачу",
-  editTask: "Редактировать задачу",
-  taskTitle: "Название задачи",
-  taskDescription: "Описание",
-  addDescription: "+ Добавить описание",
-  assignTo: "Назначить",
-  department: "Отдел",
-  status: "Статус",
-  priority: "Приоритет",
-  deadline: "Срок",
-  createdAt: "Создано",
-  taskFiles: "Файлы",
-  attachFile: "Прикрепить файл",
-  noTasks: "Задачи отсутствуют",
-  deleteTask: "Удалить задачу?",
-  deleteTaskConfirm: "Это действие нельзя отменить.",
-  taskProgress: "Прогресс",
-  subtasks: "Подзадачи",
-  addSubtask: "+ Добавить подзадачу",
-
-  // Status
-  statusNew: "Новый",
-  statusProgress: "В процессе",
-  statusDone: "Завершён",
-
-  // Priority
-  priorityLow: "Низкий",
-  priorityMedium: "Средний",
-  priorityHigh: "Высокий",
-
-  // Users
-  addUser: "Добавить пользователя",
-  editUser: "Редактировать пользователя",
-  deleteUser: "Удалить пользователя?",
-  fullName: "Полное имя",
-  role: "Роль",
-  boss: "Руководитель",
-  worker: "Сотрудник",
-  tasksCount: "Количество задач",
-  completedCount: "Выполнено",
-  pendingCount: "Осталось",
-
-  // Departments
-  addDepartment: "Добавить отдел",
-  deleteDepartment: "Удалить отдел?",
-  departmentName: "Название отдела",
-
-  // Statistics
-  tasksByStatus: "По статусу",
-  tasksByUser: "По пользователям",
-  tasksByPriority: "По приоритету",
-  tasksByDepartment: "По отделам",
-  completionRate: "Процент выполнения",
-
-  // Settings
-  language: "Язык",
-  theme: "Тема",
-  lightMode: "Светлая",
-  darkMode: "Тёмная",
-  manageUsers: "Управление пользователями",
-  manageDepartments: "Управление отделами",
-
-  // Profile
-  profileTitle: "Мой профиль",
-  bio: "О себе",
-  uploadPhoto: "Загрузить фото",
-  changePassword: "Изменить пароль",
-
-  // Notifications
-  noNotifications: "Нет уведомлений",
-  markAllRead: "Отметить все как прочитанные",
-
-  // Departments default
-  deptFrontend: "Frontend",
-  deptBackend: "Backend",
-  deptDesign: "Дизайн",
-  deptOther: "Другое",
-
-
-  // Login 
-  loginTitle: "С возвращением!",
-  loginSubtitle: "Войдите в систему, чтобы продолжить работу.",
-  usernamePlaceholder: "Логин",
-  passwordPlaceholder: "Пароль",
-  recoveryPassword: "Забыли пароль?",
-  loginBtn: "Войти",
-  processing: "Загрузка...",
-  imageOverlayText: "Все задачи в единой системе.",
-  errorUserNotFound: "Пользователь не найден.",
-  errorWrongPassword: "Неверный пароль. Попробуйте еще раз.",
-  errorAuthFailed: "Ошибка при входе в систему.",
-
-
-  // ... boshqa tarjimalar
-  statistics: "Статистика",
-  totalTasks: "Всего задач",
-  inProgressTasks: "Задачи в процессе",
-  completedTasks: "Выполненные",
-  activityFlow: "Поток активности",
-  thisWeek: "Эта неделя",
-  thisMonth: "Этот месяц",
-  staff: "Сотрудники",
-  taskDistribution: "Распределение задач",
-  recentActivities: "Последние действия",
-  staffMember: "Сотрудник",
-  task: "Задача",
-  // Дни недели
-  mon: "Пон", tue: "Вто", wed: "Сре", thu: "Чет", fri: "Пят", sat: "Суб", sun: "Воск",
-
-
+  welcomeBack: "С возвращением",
   overdue: "Просрочено",
   today: "Сегодня",
   tomorrow: "Завтра",
@@ -165,14 +63,75 @@ export const ru = {
   remainingSuffix: "осталось",
   unitPcs: "шт.",
 
-  operationsCountLabel: "операций",
-  searchPlaceholder: "Фильтрация и поиск...",
-  allStatuses: "Все статусы",
-  allAssignees: "Все исполнители",
-  noTasksFound: "Данные не обнаружены",
-  toastChangesSaved: "Изменения успешно сохранены",
-  toastTaskCreated: "Новая задача сформирована",
-  toastTaskDeleted: "Задача успешно удалена из системы",
-  confirmDeletion: "Подтвердите удаление",
-  deletionWarning: "задача будет полностью удалена из системы.",
+  // Tasks
+  addTask: "Добавить задачу",
+  editTask: "Редактировать задачу",
+  taskTitle: "Название задачи",
+  taskDescription: "Описание",
+  detailedDescription: "Детальное описание",
+  assignTo: "Исполнитель",
+  department: "Отдел",
+  status: "Статус",
+  priority: "Приоритет",
+  deadline: "Срок",
+  createdAt: "Создано",
+  taskFiles: "Файлы",
+  attachFile: "Прикрепить файл",
+  noTasks: "Задачи отсутствуют",
+  subtasks: "Этапы (To-do)",
+  taskProgress: "Уровень выполнения",
+
+  // Status & Priority
+  statusNew: "Новый",
+  statusProgress: "В процессе",
+  statusDone: "Завершён",
+  priorityLow: "Низкий",
+  priorityMedium: "Средний",
+  priorityHigh: "Высокий",
+
+  // Users & Settings
+  addUser: "Добавить сотрудника",
+  editUser: "Редактировать",
+  deleteUser: "Удалить сотрудника",
+  fullName: "Полное имя (Ф.И.О)",
+  role: "Должность",
+  boss: "Руководитель",
+  worker: "Сотрудник",
+  tasksCount: "Задачи",
+  completedCount: "Готово",
+  pendingCount: "Осталось",
+  manageUsers: "Управление пользователями",
+  manageDepartments: "Управление отделами",
+  departmentName: "Название отдела",
+  departmentNamePlaceholder: "Название нового отдела...",
+  appearanceSettings: "Настройки внешнего вида",
+  systemLanguage: "Язык системы",
+  theme: "Тема",
+  lightMode: "Светлая",
+  darkMode: "Тёмная",
+  noPermissionTitle: "Недостаточно прав",
+  noPermissionDesc: "У вас нет прав для выполнения этого административного действия.",
+  revokeAdmin: "Отозвать права",
+  promoteToAdmin: "Дать права управления",
+  permanentAdminUntouchable: "Главный админ неприкосновенен",
+  noActionPermission: "Действие запрещено",
+  areYouSure: "Вы уверены?",
+  deleteDepartment: "Удалить отдел",
+
+  // Statistics
+  activityFlow: "Поток активности",
+  thisWeek: "Эта неделя",
+  thisMonth: "Этот месяц",
+  staff: "Сотрудники",
+  taskDistribution: "Распределение задач",
+  recentActivities: "Последние действия",
+  tasksByStatus: "По статусу",
+  tasksByUser: "По пользователям",
+  tasksByPriority: "По приоритету",
+  tasksByDepartment: "По отделам",
+  completionRate: "Процент выполнения",
+
+  // Notifications
+  noNotifications: "Нет уведомлений",
+  markAllRead: "Отметить все как прочитанные",
 };

@@ -52,7 +52,7 @@ export default function Layout() {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
       
-      {/* 1. SUCCESS TOAST NOTIFICATION (TEPADA) */}
+      {/* 1. SUCCESS TOAST NOTIFICATION (ENG TEPADA) */}
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top-4 duration-300">
           <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 dark:border-slate-200">
@@ -67,9 +67,7 @@ export default function Layout() {
         <div className="fixed inset-0 bg-white/40 dark:bg-slate-950/40 backdrop-blur-[2px] z-[100] flex items-center justify-center transition-all">
           <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-3 border border-slate-100 dark:border-slate-700 animate-in fade-in zoom-in duration-200">
             <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
-            <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-[0.2em]">
-              Amal bajarilmoqda
-            </p>
+            <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-[0.2em]">Amal bajarilmoqda</p>
           </div>
         </div>
       )}
@@ -77,14 +75,14 @@ export default function Layout() {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-[45] lg:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - z-index ko'tarildi */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-30
+        fixed lg:static inset-y-0 left-0 z-50
         w-64 flex flex-col bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700
         transition-transform duration-300 lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -94,9 +92,9 @@ export default function Layout() {
             <div className="w-9 h-9 rounded-xl bg-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
               <CheckSquare size={18} className="text-white" />
             </div>
-            <span className="font-bold text-lg text-slate-900 dark:text-white">Task Flow</span>
+            <span className="font-bold text-lg text-slate-900 dark:text-white whitespace-nowrap">Task Flow</span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-slate-600 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -125,9 +123,12 @@ export default function Layout() {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="flex items-center justify-between px-4 lg:px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <header className="flex items-center justify-between px-4 lg:px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 flex-shrink-0 z-40 relative">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors mr-2"
+          >
             <Menu size={20} />
           </button>
 
@@ -165,7 +166,7 @@ export default function Layout() {
               </span>
             </button>
 
-            <button onClick={handleLogout} className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-red-500" title={t.logout}>
+            <button onClick={handleLogout} className="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-red-500 transition-colors" title={t.logout}>
               <LogOut size={18} />
             </button>
           </div>

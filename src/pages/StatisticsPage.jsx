@@ -14,28 +14,37 @@ import { format } from 'date-fns';
 const COLORS = ['#f97316', '#8b5cf6', '#22c55e', '#ef4444'];
 
 export default function StatisticsPage() {
-  const { tasks, users, t } = useApp(); // t ob'ektini qabul qilamiz
+  const { tasks, users, t } = useApp();
+
+  // t ob'ekti hali yuklanmagan bo'lsa xatolik bermasligi uchun
+  if (!t) return null;
 
   const activityData = useMemo(() => {
     const days = [t.mon, t.tue, t.wed, t.thu, t.fri, t.sat, t.sun];
-
-    // Haftaning boshlanish sanasini olamiz (Dushanba)
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
     return days.map((day, index) => {
-      // Har bir kunning aniq sanasini hisoblaymiz
       const currentDate = addDays(weekStart, index);
 
-      // Shu kunda yaratilgan vazifalar soni
-      const dailyTasks = tasks.filter(task =>
-        isSameDay(parseISO(task.created_at || task.createdAt), currentDate)
-      ).length;
+      // Sanani xavfsiz o'qish uchun yordamchi funksiya
+      const safeParseISO = (dateStr) => {
+        if (!dateStr) return new Date(0); // Agar sana yo'q bo'lsa, juda eski sana qaytaramiz
+        try {
+          return parseISO(dateStr);
+        } catch (e) {
+          return new Date(0);
+        }
+      };
 
-      // Shu kunda bajarilgan (status: done) vazifalar soni
-      const dailyCompleted = tasks.filter(task =>
-        task.status === 'done' &&
-        isSameDay(parseISO(task.updated_at || task.createdAt), currentDate)
-      ).length;
+      const dailyTasks = tasks.filter(task => {
+        const date = task.created_at || task.createdAt;
+        return date && isSameDay(safeParseISO(date), currentDate);
+      }).length;
+
+      const dailyCompleted = tasks.filter(task => {
+        const date = task.updated_at || task.createdAt;
+        return task.status === 'done' && date && isSameDay(safeParseISO(date), currentDate);
+      }).length;
 
       return {
         name: day,
@@ -43,12 +52,13 @@ export default function StatisticsPage() {
         completed: dailyCompleted
       };
     });
-  }, [tasks, t]); // tasks o'zgarganda grafik yangilanadi
+  }, [tasks, t]);
 
   const userData = users.map(u => {
     const userTasks = tasks.filter(task => task.assignedUser === u.id);
     return {
-      name: u.fullName ? u.fullName.split(' ')[0] : (u.username || t.staffMember),
+      // fullName mavjud bo'lsa split qilamiz, aks holda username yoki fallback
+      name: u.fullName ? String(u.fullName).split(' ')[0] : (u.username || t.staffMember),
       value: userTasks.length
     };
   }).filter(d => d.value > 0).slice(0, 5);
@@ -61,7 +71,6 @@ export default function StatisticsPage() {
 
   return (
     <div className="space-y-6 pb-10 font-sans">
-
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -175,7 +184,6 @@ export default function StatisticsPage() {
           ))}
         </div>
       </div>
-
     </div>
   );
 }

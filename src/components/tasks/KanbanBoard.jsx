@@ -30,9 +30,9 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
           return (
             <div 
               key={status} 
-              className="flex flex-col min-h-[500px] w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden"
+              className="flex flex-col min-h-[500px] w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden shadow-none"
             >
-              {/* Ustun Sarlavhasi - Kartochka ichida chiroyli header */}
+              {/* Ustun Sarlavhasi */}
               <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
                 <div className="flex items-center gap-2">
                   <div className={`w-2.5 h-2.5 rounded-full ${info.color}`} />

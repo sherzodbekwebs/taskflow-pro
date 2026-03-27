@@ -39,10 +39,8 @@ export function AppProvider({ children }) {
     } catch (err) { console.error(err); }
   }, []);
 
-  // AppContext.js ichidagi useEffect qismini quyidagicha o'zgartiring:
-
   useEffect(() => {
-    const sid = StorageService.get('taskflow_session'); // Session ID ni olamiz
+    const sid = StorageService.get('taskflow_session');
 
     const init = async () => {
       try {
@@ -63,13 +61,17 @@ export function AppProvider({ children }) {
     const ch = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (p) => {
         if (p.eventType === 'INSERT') {
-          setTasks(prev => [p.new, ...prev.filter(t => !t.id.toString().startsWith('temp-'))]);
+          setTasks(prev => {
+            // TUZATISH: Agar vazifa allaqachon steytda bo'lsa (addTask tugagan bo'lsa), qayta qo'shmaymiz
+            if (prev.some(t => t.id === p.new.id)) return prev;
+            // Aks holda temp-ni o'chirib, yangisini qo'shamiz
+            return [p.new, ...prev.filter(t => !String(t.id).startsWith('temp-'))];
+          });
         }
         else if (p.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === p.new.id ? { ...t, ...p.new } : t));
         else if (p.eventType === 'DELETE') setTasks(prev => prev.filter(t => t.id !== p.old.id));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => refreshData())
-      // YANGI QISM: Bildirishnomalarni real-time eshitish
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -95,15 +97,11 @@ export function AppProvider({ children }) {
     const tempId = `temp-${Date.now()}`;
     setTasks(prev => [{ ...taskData, id: tempId, created_at: new Date().toISOString(), subtasks: [], comments: [] }, ...prev]);
     showToast("Vazifa yaratildi");
-
     try {
       const real = await TaskService.add(taskData);
       setTasks(prev => prev.map(t => t.id === tempId ? real : t));
-
-      // TG: Yangi vazifa bildirishnomasi
       const assigned = users.find(u => u.id === taskData.assignedUser);
       TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
-
       notifyAll("Yangi vazifa", `"${taskData.title}" qo'shildi`, 'task_added', 'plus');
     } catch (err) { setTasks(prev => prev.filter(t => t.id !== tempId)); }
   };
@@ -113,11 +111,8 @@ export function AppProvider({ children }) {
     showToast("O'zgarishlar saqlandi");
     try {
       const updated = await TaskService.update(id, updates);
-
-      // TG: Tahrirlash bildirishnomasi
       const assigned = users.find(u => u.id === (updates.assignedUser || updated.assignedUser));
       TelegramService.sendNotification(updated, assigned, 'update').catch(console.error);
-
       notifyAll("Vazifa yangilandi", `"${updated.title}" tahrirlandi`, 'task_updated', 'edit');
     } catch (err) { refreshData(); }
   };
@@ -129,22 +124,17 @@ export function AppProvider({ children }) {
     showToast("Vazifa tizimdan o'chirildi");
     try {
       if (target?.files?.length > 0) TaskService.deleteStorageFiles(target.files.map(f => f.url));
-
-      // TG: O'chirish bildirishnomasi (Ixtiyoriy)
       const assigned = users.find(u => u.id === target.assignedUser);
       TelegramService.sendNotification(target, assigned, 'delete').catch(console.error);
-
       await TaskService.delete(id);
       notifyAll("Vazifa o'chirildi", `"${target?.title}" olib tashlandi`, 'task_deleted', 'trash');
     } catch (err) { setTasks(old); }
   };
 
-  // ... (toggleSubtask, addComment, moveTask, addUser va h.k. o'zgarishsiz qoladi)
   const moveTask = async (tid, ns) => {
     setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: ns, completed: ns === 'done' } : t));
     try {
       const updated = await TaskService.update(tid, { status: ns, completed: ns === 'done' });
-      // Status o'zgarganda ham TG yuborish (ixtiyoriy)
       const assigned = users.find(u => u.id === updated.assignedUser);
       TelegramService.sendNotification(updated, assigned, 'update').catch(console.error);
     } catch (err) { refreshData(); }
@@ -192,11 +182,46 @@ export function AppProvider({ children }) {
       language, darkMode, t,
       login, logout: () => { setCurrentUser(null); StorageService.remove('taskflow_session'); },
       addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask,
-      addUser: async (d) => { setIsActionLoading(true); await UserService.add(d); setIsActionLoading(false); showToast("Xodim qo'shildi"); },
-      updateUser: async (id, data) => { setIsActionLoading(true); await UserService.update(id, data); setIsActionLoading(false); showToast("Ma'lumotlar yangilandi"); },
-      deleteUser: async (id) => { setIsActionLoading(true); await UserService.delete(id); setIsActionLoading(false); showToast("Xodim o'chirildi"); },
-      addDepartment: async (n) => { setIsActionLoading(true); await UserService.addDepartment(n); setIsActionLoading(false); showToast("Yo'nalish qo'shildi"); },
-      deleteDepartment: async (n) => { setIsActionLoading(true); await UserService.deleteDepartment(n); setIsActionLoading(false); showToast("Yo'nalish olib tashlandi"); },
+      addUser: async (d) => {
+        setIsActionLoading(true);
+        try {
+          const res = await UserService.add(d);
+          setUsers(prev => [...prev, res]);
+          showToast("Xodim qo'shildi");
+        } finally { setIsActionLoading(false); }
+      },
+      updateUser: async (id, data) => {
+        setIsActionLoading(true);
+        try {
+          const res = await UserService.update(id, data);
+          setUsers(prev => prev.map(u => u.id === id ? res : u));
+          showToast("Ma'lumotlar yangilandi");
+        } finally { setIsActionLoading(false); }
+      },
+      deleteUser: async (id) => {
+        setIsActionLoading(true);
+        try {
+          await UserService.delete(id);
+          setUsers(prev => prev.filter(u => u.id !== id));
+          showToast("Xodim o'chirildi");
+        } finally { setIsActionLoading(false); }
+      },
+      addDepartment: async (n) => {
+        setIsActionLoading(true);
+        try {
+          await UserService.addDepartment(n);
+          setDepartments(prev => [...prev, n]);
+          showToast("Yo'nalish qo'shildi");
+        } finally { setIsActionLoading(false); }
+      },
+      deleteDepartment: async (n) => {
+        setIsActionLoading(true);
+        try {
+          await UserService.deleteDepartment(n);
+          setDepartments(prev => prev.filter(d => d !== n));
+          showToast("Yo'nalish olib tashlandi");
+        } finally { setIsActionLoading(false); }
+      },
       markNotifRead: (id) => { setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); NotificationService.markRead(currentUser.id, id); },
       markAllNotifRead: () => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); NotificationService.markAllRead(currentUser.id); },
       changeLanguage: (l) => { setLanguage(l); StorageService.set('taskflow_lang', l); },

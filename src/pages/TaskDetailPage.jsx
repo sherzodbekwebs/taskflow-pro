@@ -4,7 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import TaskModal from '../components/tasks/TaskModal';
 import {
   ArrowLeft, Calendar, User, AlignLeft,
-  CheckCircle2, Circle, Paperclip, FileText, Download, X, Maximize2, Eye, Edit3, Layers, Trash2, ShieldAlert, RefreshCw
+  CheckCircle2, Circle, Paperclip, FileText, Download, X, Eye, Edit3, Trash2, ShieldAlert, RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { uz } from 'date-fns/locale';
@@ -68,43 +68,47 @@ export default function TaskDetailPage() {
   return (
     <>
       {/* 
-        ASOSIY KONTENT DIV - BU FAQAT O'NG TOMONDA TURADI 
+        ASOSIY KONTENT DIV - lg:overflow-hidden faqat katta ekranda, 
+        mobilda butun sahifa scroll bo'lishi uchun overflow-y-auto qoldirildi.
       */}
-      <div className="fixed top-16 left-0 lg:left-64 right-0 bottom-0 bg-[#e9eef2] dark:bg-slate-950 z-10 p-4 lg:p-6 flex flex-col overflow-hidden animate-fade-in font-sans">
+      <div className="fixed top-16 left-0 lg:left-64 right-0 bottom-0 bg-[#e9eef2] dark:bg-slate-950 z-10 p-4 lg:p-6 flex flex-col overflow-y-auto lg:overflow-hidden animate-fade-in font-sans">
         
-        {/* 1. HEADER SECTION */}
+        {/* 1. HEADER SECTION - Mobil qurilmada fix qotib qolmaydi, sahifa bilan birga yuradi */}
         <div className="flex-shrink-0 space-y-4 mb-4">
-          <div className="flex items-center justify-between">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-primary-500 transition-all font-bold uppercase text-[10px] tracking-widest">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-primary-500 transition-all font-bold uppercase text-[10px] tracking-widest w-fit">
               <ArrowLeft size={16} /> ORQAGA QAYTISH
             </button>
-            <div className="flex gap-2">
-              <button onClick={handleDeleteClick} className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-[0.7rem] text-slate-400 hover:text-red-500 hover:border-red-200 transition-all uppercase text-[10px] font-bold tracking-widest">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button onClick={handleDeleteClick} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-[0.7rem] text-slate-400 hover:text-red-500 hover:border-red-200 transition-all uppercase text-[10px] font-bold tracking-widest">
                 <Trash2 size={14} /> O'chirish
               </button>
-              <button onClick={handleEditClick} className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-[0.7rem] text-slate-400 hover:text-primary-500 hover:border-primary-200 transition-all uppercase text-[10px] font-bold tracking-widest">
+              <button onClick={handleEditClick} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-[0.7rem] text-slate-400 hover:text-primary-500 hover:border-primary-200 transition-all uppercase text-[10px] font-bold tracking-widest">
                 <Edit3 size={14} /> Tahrirlash
               </button>
             </div>
           </div>
 
           <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] shadow-none">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              <div className="lg:col-span-8 space-y-3">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white leading-tight truncate">{task.title}</h1>
-                  <div className="flex gap-1 flex-shrink-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start lg:items-center">
+              <div className="lg:col-span-8 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-start gap-3">
+                  {/* Sarlavha endi to'liq ko'rinadi (break-words) */}
+                  <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-tight break-words flex-1">
+                    {task.title}
+                  </h1>
+                  <div className="flex gap-1 flex-shrink-0 mt-1">
                     <span className={`badge-${task.status} px-2 py-0.5 text-[9px] font-bold uppercase`}>{task.status}</span>
                     <span className={`badge-${task.priority} px-2 py-0.5 text-[9px] font-bold uppercase`}>{task.priority}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                   <div className="flex items-center gap-2 text-xs font-bold"><User size={14} className="text-primary-500" /><span className="text-slate-400 uppercase text-[10px]">Ijrochi:</span><span className="dark:text-white">{assignedUser?.fullName || assignedUser?.fullname || '—'}</span></div>
                   <div className="flex items-center gap-2 text-xs font-bold"><Calendar size={14} className="text-amber-500" /><span className="text-slate-400 uppercase text-[10px]">Muddat:</span><span className="dark:text-white">{task.deadline ? format(new Date(task.deadline), 'dd MMM, yyyy', { locale: uz }) : '—'}</span></div>
                 </div>
               </div>
 
-              <div className="lg:col-span-4 pl-0 lg:pl-8 lg:border-l border-slate-100 dark:border-slate-700">
+              <div className="lg:col-span-4 pl-0 lg:pl-8 lg:border-l border-slate-100 dark:border-slate-700 w-full pt-4 lg:pt-0">
                 <div className="flex items-center justify-between mb-2"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Progress</span><span className="text-xl font-black text-primary-500">{progress}%</span></div>
                 <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
                   <div className="h-full bg-primary-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
@@ -115,18 +119,18 @@ export default function TaskDetailPage() {
           </div>
         </div>
 
-        {/* 2. MAIN SCROLLABLE SECTION */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
-          <div className="lg:col-span-8 overflow-y-auto p-1 space-y-4 custom-scrollbar">
+        {/* 2. MAIN CONTENT SECTION */}
+        <div className="lg:flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:overflow-hidden">
+          <div className="lg:col-span-8 lg:overflow-y-auto space-y-4 custom-scrollbar overflow-visible">
             <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem]">
               <div className="flex items-center gap-2 text-slate-400 mb-6 font-bold uppercase text-[10px] tracking-widest"><Paperclip size={16} className="text-primary-500" /> Biriktirilgan hujjatlar</div>
               {task.files?.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
                   {task.files.map((file, idx) => (
                     <div key={idx} className="group relative rounded-[0.7rem] border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-900 aspect-square transition-all">
-                      <div onClick={() => handleFileClick(file)} className="w-full h-full cursor-pointer hover:border-primary-400">
+                      <div onClick={() => handleFileClick(file)} className="w-full h-full cursor-pointer">
                         {getIsImage(file.name) ? <img src={file.url} className="w-full h-full object-cover" alt="file" /> : <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center text-[7px] font-bold text-slate-400"><FileText size={20} className="text-slate-300 mb-1" /><span className="truncate w-full px-1">{file.name}</span></div>}
-                        <div className="absolute inset-0 bg-primary-500/10 opacity-0 group-hover:opacity-100 flex items-center justify-center"><Eye size={16} className="text-primary-500" /></div>
+                        <div className="absolute inset-0 bg-primary-500/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><Eye size={16} className="text-primary-500" /></div>
                       </div>
                       <a href={file.url} download target="_blank" rel="noreferrer" className="absolute top-1 right-1 p-1 bg-white/80 dark:bg-slate-800/80 rounded shadow-sm text-slate-500 hover:text-primary-500 opacity-0 group-hover:opacity-100 transition-all">
                         <Download size={12} />
@@ -137,37 +141,40 @@ export default function TaskDetailPage() {
               ) : <p className="text-[10px] italic text-slate-400">Hujjatlar mavjud emas</p>}
             </div>
 
-            <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] mb-6">
+            <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem]">
               <div className="flex items-center gap-2 text-slate-400 mb-4 font-bold uppercase text-[10px] tracking-widest"><AlignLeft size={16} /> Vazifa tafsifi</div>
-              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{task.description || "Tavsif mavjud emas."}</p>
+              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{task.description || "Tavsif mavjud emas."}</p>
             </div>
           </div>
 
-          <div className="lg:col-span-4 flex flex-col bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden">
-            <div className="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/10">
-              <h3 className="text-[10px] font-bold uppercase tracking-wider dark:text-white">Vazifalar ro'yxati</h3>
+          {/* VAZIFALAR RO'YXATI - Cardlar endi to'liq kenglikda chiqadi */}
+          <div className="lg:col-span-4 flex flex-col bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-visible lg:overflow-hidden h-fit lg:h-full w-full">
+            <div className="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/10 flex-shrink-0">
+              <h3 className="text-[10px] font-black uppercase tracking-wider dark:text-white">Vazifalar ro'yxati</h3>
               <span className="text-[10px] bg-primary-500 text-white px-2 py-0.5 rounded font-bold">{totalCount}</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2">
+            <div className="lg:flex-1 lg:overflow-y-auto p-4 custom-scrollbar space-y-2 overflow-visible w-full">
               {task.subtasks?.map((st, idx) => (
-                <button key={st.id || idx} onClick={() => toggleSubtask(task.id, st.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-[0.7rem] border transition-all text-left group ${st.done ? 'bg-green-50/30 dark:bg-green-900/5 border-green-100 dark:border-green-900/20' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-primary-300'}`}
+                <button 
+                  key={st.id || idx} 
+                  onClick={() => toggleSubtask(task.id, st.id)}
+                  className={`w-full flex items-start gap-3 p-3.5 rounded-[0.7rem] border transition-all text-left group ${st.done ? 'bg-green-50/30 dark:bg-green-900/5 border-green-100 dark:border-green-900/20' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-primary-300 shadow-sm'}`}
                 >
-                  <div className={`transition-all ${st.done ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>{st.done ? <CheckCircle2 size={18} /> : <Circle size={18} />}</div>
-                  <span className={`text-[12px] font-semibold ${st.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>{st.text}</span>
+                  <div className={`mt-0.5 flex-shrink-0 transition-all ${st.done ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                    {st.done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                  </div>
+                  <span className={`text-[12px] font-bold leading-tight break-words flex-1 ${st.done ? 'line-through text-slate-400 font-medium' : 'text-slate-700 dark:text-slate-200'}`}>
+                    {st.text}
+                  </span>
                 </button>
               ))}
             </div>
           </div>
         </div>
       </div>
-{/* sfddddddd */}
-      {/* 
-         3. MODALLAR QISMI - BU YERDA FIXED INSET-0 VA Z-[9999] ISHLATILADI
-         BULAR ASOSIY DIVDAN TASHQARIDA, SHUNING UCHUN SIDEBARNI YOPADI VA BLUR QILADI
-      */}
 
-      {/* Ruxsat yo'q modali */}
+      {/* MODALLAR QISMI - O'zgarishsiz qoldi */}
+
       {showNoPerm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowNoPerm(false)}>
            <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -179,7 +186,6 @@ export default function TaskDetailPage() {
         </div>
       )}
 
-      {/* O'chirishni tasdiqlash */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -191,14 +197,12 @@ export default function TaskDetailPage() {
         </div>
       )}
 
-      {/* Tahrirlash modali */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999]">
           <TaskModal task={task} onClose={() => setShowEditModal(false)} />
         </div>
       )}
 
-      {/* Rasm zoom */}
       {zoomImage && (
         <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-10 animate-fade-in" onClick={() => setZoomImage(null)}>
           <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all"><X size={40} /></button>
@@ -206,7 +210,6 @@ export default function TaskDetailPage() {
         </div>
       )}
 
-      {/* Fayl preview (Office/PDF) */}
       {previewFile && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-800 w-full max-w-6xl h-[90vh] rounded-[0.7rem] flex flex-col overflow-hidden shadow-2xl">

@@ -40,7 +40,6 @@ const TaskService = {
     }
   },
 
-  // STORAGE'DAN FAYLLARNI O'CHIRISH (YANGI)
   deleteStorageFiles: async (fileUrls) => {
     try {
       if (!fileUrls || fileUrls.length === 0) return;

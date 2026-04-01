@@ -26,7 +26,7 @@ export function AppProvider({ children }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  // Маълумотларни базадан олиш (Фақат дастлабки юклаш ёки мажбурий янгилаш учун)
+  // Маълумотларни базадан олиш
   const refreshData = useCallback(async () => {
     try {
       const [allTasks, allUsers, allDeps] = await Promise.all([
@@ -35,13 +35,16 @@ export function AppProvider({ children }) {
         UserService.getDepartments()
       ]);
       setTasks(allTasks); setUsers(allUsers); setDepartments(allDeps);
-      const sid = StorageService.get('taskflow_session');
+      
+      // СЕССИЯНИ sessionStorage'ДАН ОЛАМИЗ
+      const sid = window.sessionStorage.getItem('taskflow_session');
       if (sid) { const n = await NotificationService.getByUser(sid); setNotifications(n); }
     } catch (err) { console.error(err); }
   }, []);
 
   useEffect(() => {
-    const sid = StorageService.get('taskflow_session');
+    // СЕССИЯНИ sessionStorage'ДАН ОЛАМИЗ
+    const sid = window.sessionStorage.getItem('taskflow_session');
 
     const init = async () => {
       try {
@@ -49,6 +52,7 @@ export function AppProvider({ children }) {
         const sl = StorageService.get('taskflow_lang') || 'uz';
         const sd = StorageService.get('taskflow_dark') || false;
         setLanguage(sl); setDarkMode(sd); if (sd) document.documentElement.classList.add('dark');
+        
         if (sid) {
           const all = await UserService.getAll();
           const u = all.find(x => x.id === sid);
@@ -59,11 +63,10 @@ export function AppProvider({ children }) {
     };
     init();
 
-    // --- REAL-TIME ЛИСТЕНЕР (ОПТИМАЛ) ---
+    // --- REAL-TIME ЛИСТЕНЕР ---
     const ch = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (p) => {
         const { eventType, new: newRecord, old: oldRecord } = p;
-
         if (eventType === 'INSERT') {
           setTasks(prev => {
             if (prev.some(t => t.id === newRecord.id)) return prev;
@@ -71,7 +74,6 @@ export function AppProvider({ children }) {
           });
         }
         else if (eventType === 'UPDATE') {
-          // ТУЗАТИШ: refreshData чақирилмайди, фақатгина ўзгарган вазифа стейтда янгиланади
           setTasks(prev => prev.map(t => t.id === newRecord.id ? { ...t, ...newRecord } : t));
         }
         else if (eventType === 'DELETE') {
@@ -79,7 +81,6 @@ export function AppProvider({ children }) {
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-         // Юзерлар ўзгарса ҳаммасини янгилаш хавфсиз
          refreshData();
       })
       .subscribe();
@@ -92,8 +93,6 @@ export function AppProvider({ children }) {
     NotificationService.add({ title, message: msg, type, icon }, ids).catch(console.error);
   };
 
-  // --- ТЕЗКОР АМАЛЛАР (БАЗАДАН ЖАВОБ КУТМАСДАН ИШЛАЙДИ) ---
-
   const addTask = async (taskData) => {
     const tempId = `temp-${Date.now()}`;
     const optimisticTask = { 
@@ -101,7 +100,6 @@ export function AppProvider({ children }) {
     };
     setTasks(prev => [optimisticTask, ...prev]);
     showToast("Вазифа яратилди");
-
     try {
       const real = await TaskService.add(taskData);
       setTasks(prev => prev.map(t => t.id === tempId ? real : t));
@@ -112,35 +110,19 @@ export function AppProvider({ children }) {
   };
 
   const updateTask = async (id, updates) => {
-    // UI-ни дарҳол янгилаймиз
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
     showToast("Ўзгаришлар сақланди");
-    try { 
-      await TaskService.update(id, updates);
-      // Бу ерда refreshData чақирилмайди! Real-time UPDATE келиб ўзи тўғрилайди.
-    } catch (err) { 
-      console.error(err);
-      refreshData(); // Фақат хато бўлса базадан қайта ўқиймиз
-    }
+    try { await TaskService.update(id, updates); } catch (err) { console.error(err); refreshData(); }
   };
 
   const moveTask = async (tid, ns) => {
-    // 1. UI-да дарҳол кўчирамиз
     setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: ns, completed: ns === 'done' } : t));
-    
     try {
-      // 2. Базага сўров юборамиз
       await TaskService.update(tid, { status: ns, completed: ns === 'done' });
-      
       const updatedTask = tasks.find(t => t.id === tid);
       const assigned = users.find(u => u.id === updatedTask?.assignedUser);
-      if (assigned) {
-        TelegramService.sendNotification({ ...updatedTask, status: ns }, assigned, 'update').catch(console.error);
-      }
-    } catch (err) { 
-      console.error(err);
-      refreshData(); // Хато бўлса эски ҳолатга қайтади
-    }
+      if (assigned) TelegramService.sendNotification({ ...updatedTask, status: ns }, assigned, 'update').catch(console.error);
+    } catch (err) { console.error(err); refreshData(); }
   };
 
   const deleteTask = async (id) => {
@@ -165,25 +147,19 @@ export function AppProvider({ children }) {
       }
       return t;
     }));
-    try {
-      await TaskService.toggleSubtask(tid, sid);
-    } catch (err) { refreshData(); }
+    try { await TaskService.toggleSubtask(tid, sid); } catch (err) { refreshData(); }
   };
 
   const approveTask = async (tid) => {
     setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: 'done', completed: true } : t));
     showToast("Вазифа тасдиқланди");
-    try {
-      await TaskService.update(tid, { status: 'done', completed: true });
-    } catch (err) { refreshData(); }
+    try { await TaskService.update(tid, { status: 'done', completed: true }); } catch (err) { refreshData(); }
   };
 
   const rejectTask = async (tid) => {
     setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: 'progress', completed: false } : t));
     showToast("Вазифа рад этилди");
-    try {
-      await TaskService.update(tid, { status: 'progress', completed: false });
-    } catch (err) { refreshData(); }
+    try { await TaskService.update(tid, { status: 'progress', completed: false }); } catch (err) { refreshData(); }
   };
 
   const addComment = async (tid, txt) => {
@@ -191,17 +167,19 @@ export function AppProvider({ children }) {
     const nc = { id: Date.now(), text: txt, userName: currentUser?.fullName, createdAt: new Date().toISOString() };
     const uc = [...(target.comments || []), nc];
     setTasks(prev => prev.map(t => t.id === tid ? { ...t, comments: uc } : t));
-    try {
-      await TaskService.update(tid, { comments: uc });
-      showToast("Изоҳ қўшилди");
-    } catch (err) { console.error(err); }
+    try { await TaskService.update(tid, { comments: uc }); showToast("Изоҳ қўшилди"); } catch (err) { console.error(err); }
   };
 
   const login = async (u, p) => {
     setIsActionLoading(true);
     try {
       const res = await UserService.getByCredentials(u, p);
-      if (res) { setCurrentUser(res); StorageService.set('taskflow_session', res.id); await refreshData(); }
+      if (res) { 
+        setCurrentUser(res); 
+        // localStorage ЎРНИГА sessionStorage ИШЛАТИЛАДИ
+        window.sessionStorage.setItem('taskflow_session', res.id); 
+        await refreshData(); 
+      }
       return res;
     } finally { setIsActionLoading(false); }
   };
@@ -214,7 +192,12 @@ export function AppProvider({ children }) {
       currentUser, isAuthLoading, isActionLoading, isSuperAdmin, hasAccess, toast,
       tasks, users, departments, notifications, unreadCount: notifications.filter(n => !n.read).length,
       language, darkMode, t,
-      login, logout: () => { setCurrentUser(null); StorageService.remove('taskflow_session'); },
+      login, 
+      logout: () => { 
+        setCurrentUser(null); 
+        // СЕССИЯНИ sessionStorage'ДАН ЎЧИРИШ
+        window.sessionStorage.removeItem('taskflow_session'); 
+      },
       addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask,
       addUser: async (d) => { setIsActionLoading(true); try { await UserService.add(d); await refreshData(); } finally { setIsActionLoading(false); } },
       updateUser: async (id, data) => { setIsActionLoading(true); try { await UserService.update(id, data); await refreshData(); } finally { setIsActionLoading(false); } },

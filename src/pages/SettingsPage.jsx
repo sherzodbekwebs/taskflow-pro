@@ -107,7 +107,7 @@ export default function SettingsPage() {
                     alt={lang} 
                     className="w-5 h-auto rounded-sm shadow-sm object-cover"
                   />
-                  <span>{lang === 'uz' ? 'UZ' : 'RU'}</span>
+                  <span>{lang === 'uz' ? 'УЗ' : 'RU'}</span>
                 </button>
                 ))}
               </div>

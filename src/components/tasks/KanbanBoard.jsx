@@ -7,10 +7,12 @@ import { useApp } from '../../contexts/AppContext';
 export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask }) {
   const { moveTask } = useApp();
 
+  // Статуслар рўйхатига 'review' (Текширувда) қўшилди
   const columns = {
-    new: { title: 'Yangi', color: 'bg-blue-500' },
-    progress: { title: 'Jarayonda', color: 'bg-amber-500' },
-    done: { title: 'Tugallangan', color: 'bg-green-500' }
+    new: { title: 'Янги', color: 'bg-blue-500' },
+    progress: { title: 'Жараёнда', color: 'bg-amber-500' },
+    review: { title: 'Текширувда', color: 'bg-purple-500' }, // ЯНГИ УСТУН
+    done: { title: 'Тугалланган', color: 'bg-green-500' }
   };
 
   const onDragEnd = (result) => {
@@ -22,8 +24,8 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      {/* gap-3 orqali oradagi masofalar qisqartirildi */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start w-full">
+      {/* grid-cols-4 қилинди, чунки энди устунлар 4 та */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-start w-full min-w-[1200px] lg:min-w-0">
         {Object.entries(columns).map(([status, info]) => {
           const columnTasks = tasks.filter(t => t.status === status);
 
@@ -32,7 +34,7 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
               key={status} 
               className="flex flex-col min-h-[500px] w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden shadow-none"
             >
-              {/* Ustun Sarlavhasi */}
+              {/* Устун Сарлавҳаси */}
               <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
                 <div className="flex items-center gap-2">
                   <div className={`w-2.5 h-2.5 rounded-full ${info.color}`} />
@@ -83,7 +85,7 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
                     
                     {columnTasks.length === 0 && !snapshot.isDraggingOver && (
                       <div className="flex-1 flex items-center justify-center py-20 opacity-20">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Bo'sh</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Бўш</p>
                       </div>
                     )}
                   </div>

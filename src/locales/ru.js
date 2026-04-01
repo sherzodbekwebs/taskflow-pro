@@ -88,6 +88,7 @@ export const ru = {
   priorityLow: "Низкий",
   priorityMedium: "Средний",
   priorityHigh: "Высокий",
+  statusReview: "На проверке",
 
   // Users & Settings
   addUser: "Добавить сотрудника",

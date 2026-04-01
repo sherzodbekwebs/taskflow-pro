@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Plus, Trash2, Edit, User, Building2, Eye, EyeOff, X, ShieldAlert } from 'lucide-react';
+import { Plus, Trash2, Edit, User, Building2, Eye, EyeOff, X, ShieldAlert, Maximize2 } from 'lucide-react';
 
 // Vakolat yetarli emas modali
 function NoPermissionModal({ onClose }) {
   const { t } = useApp();
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[150] flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center border border-slate-100 dark:border-slate-700">
         <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-100">
           <ShieldAlert size={32} />
@@ -37,12 +37,7 @@ function UserModal({ user, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Form ma'lumotlarini nusxalaymiz
     const userData = { ...form };
-
-    // MUHIM: Tahrirlash paytida parol bo'sh bo'lsa, uni o'chirib tashlaymiz
-    // Shunda Supabase eski parolni saqlab qoladi (null yoki bo'sh qator yubormaymiz)
     if (isEdit && (!userData.password || userData.password.trim() === "")) {
       delete userData.password;
     }
@@ -102,17 +97,16 @@ export default function UsersPage() {
   const [showNoPerm, setShowNoPerm] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [zoomImage, setZoomImage] = useState(null); 
 
   const sortedUsers = useMemo(() => {
     const adminUser = users.find(u => u.username === 'admin');
     const me = users.find(u => u.id === currentUser?.id && u.username !== 'admin');
     const others = users.filter(u => u.username !== 'admin' && u.id !== currentUser?.id);
-
     const result = [];
     if (adminUser) result.push(adminUser);
     if (me) result.push(me);
     result.push(...others);
-
     return result;
   }, [users, currentUser]);
 
@@ -133,11 +127,8 @@ export default function UsersPage() {
   };
 
   const handleDeleteClick = (user) => {
-    if (isSuperAdmin) {
-      setDeleteConfirm(user);
-    } else {
-      setShowNoPerm(true);
-    }
+    if (isSuperAdmin) setDeleteConfirm(user);
+    else setShowNoPerm(true);
   };
 
   const handleDelete = async (userId) => {
@@ -169,31 +160,55 @@ export default function UsersPage() {
           const isMe = user.id === currentUser?.id;
 
           return (
-            <div key={user.id} className="card p-6 border-transparent hover:border-primary-100 transition-all shadow-none border-slate-200">
+            <div key={user.id} className="card p-6 border-transparent hover:border-primary-100 transition-all shadow-none border-slate-200 bg-white dark:bg-slate-800 rounded-[0.7rem]">
               <div className="flex items-start justify-between mb-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-black text-xl shadow-md">{initials}</div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{name}</p>
-                      {isMe && <span className="text-[10px] font-bold bg-primary-100 text-primary-600 dark:bg-primary-900/30 px-2 py-0.5 rounded-full uppercase">{t.you || "Siz"}</span>}
+                <div className="flex items-center gap-5"> {/* gap-4 dan gap-5 га оширилди */}
+                  
+                  {/* РАСМ КАТТАЛАШТИРИЛДИ (w-20 h-20) */}
+                  <div 
+                    className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md overflow-hidden relative group flex-shrink-0 ${user.avatar ? 'cursor-zoom-in' : ''}`}
+                    onClick={() => user.avatar && setZoomImage(user.avatar)}
+                  >
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                        {initials}
+                      </div>
+                    )}
+                    {user.avatar && (
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Maximize2 size={24} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{name}</p>
+                        {isMe && <span className="text-[10px] font-bold bg-primary-100 text-primary-600 dark:bg-primary-900/30 px-2 py-0.5 rounded-full uppercase flex-shrink-0">{t.you || "Siz"}</span>}
+                      </div>
+                      <p className="text-sm text-slate-500 font-medium truncate">@{user.username}</p>
                     </div>
-                    <p className="text-sm text-slate-500 font-medium">@{user.username}</p>
                   </div>
                 </div>
-                <div className="flex gap-1">
+                
+                <div className="flex gap-1 flex-shrink-0">
                   <button onClick={() => handleEdit(user)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-primary-500"><Edit size={16} /></button>
                   {!isMe && (
                     <button onClick={() => handleDeleteClick(user)} className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500"><Trash2 size={16} /></button>
                   )}
                 </div>
               </div>
+
               <div className="flex gap-2 mb-6">
                 <span className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-300 border border-slate-100 dark:border-slate-700">
                   {user.role === 'boss' ? t.boss : t.worker}
                 </span>
                 {user.department && <span className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-300 border border-slate-100 dark:border-slate-700">{user.department}</span>}
               </div>
+
               <div className="grid grid-cols-3 gap-2 pt-5 border-t border-slate-50 dark:border-slate-700">
                 <div className="text-center"><p className="text-xl font-black dark:text-white">{stats.total}</p><p className="text-[10px] text-slate-400 font-bold uppercase">{t.tasksCount}</p></div>
                 <div className="text-center"><p className="text-xl font-black text-green-500">{stats.completed}</p><p className="text-[10px] text-slate-400 font-bold uppercase">{t.completedCount}</p></div>
@@ -203,6 +218,13 @@ export default function UsersPage() {
           );
         })}
       </div>
+
+      {zoomImage && (
+        <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-10 animate-fade-in" onClick={() => setZoomImage(null)}>
+          <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all"><X size={32}/></button>
+          <img src={zoomImage} className="max-w-full max-h-full rounded-[0.7rem] border border-white/10 shadow-none" alt="zoom" />
+        </div>
+      )}
 
       {showModal && <UserModal user={editUser} onClose={() => { setShowModal(false); setEditUser(null); }} />}
       {showNoPerm && <NoPermissionModal onClose={() => setShowNoPerm(false)} />}

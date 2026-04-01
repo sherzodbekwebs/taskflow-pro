@@ -26,6 +26,7 @@ export function AppProvider({ children }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
+  // Маълумотларни базадан олиш (Фақат дастлабки юклаш ёки мажбурий янгилаш учун)
   const refreshData = useCallback(async () => {
     try {
       const [allTasks, allUsers, allDeps] = await Promise.all([
@@ -58,30 +59,28 @@ export function AppProvider({ children }) {
     };
     init();
 
+    // --- REAL-TIME ЛИСТЕНЕР (ОПТИМАЛ) ---
     const ch = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (p) => {
-        if (p.eventType === 'INSERT') {
+        const { eventType, new: newRecord, old: oldRecord } = p;
+
+        if (eventType === 'INSERT') {
           setTasks(prev => {
-            // TUZATISH: Agar vazifa allaqachon steytda bo'lsa (addTask tugagan bo'lsa), qayta qo'shmaymiz
-            if (prev.some(t => t.id === p.new.id)) return prev;
-            // Aks holda temp-ni o'chirib, yangisini qo'shamiz
-            return [p.new, ...prev.filter(t => !String(t.id).startsWith('temp-'))];
+            if (prev.some(t => t.id === newRecord.id)) return prev;
+            return [newRecord, ...prev.filter(t => !String(t.id).startsWith('temp-'))];
           });
         }
-        else if (p.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === p.new.id ? { ...t, ...p.new } : t));
-        else if (p.eventType === 'DELETE') setTasks(prev => prev.filter(t => t.id !== p.old.id));
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => refreshData())
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'user_notifications',
-        filter: sid ? `user_id=eq.${sid}` : undefined
-      }, async () => {
-        if (sid) {
-          const n = await NotificationService.getByUser(sid);
-          setNotifications(n);
+        else if (eventType === 'UPDATE') {
+          // ТУЗАТИШ: refreshData чақирилмайди, фақатгина ўзгарган вазифа стейтда янгиланади
+          setTasks(prev => prev.map(t => t.id === newRecord.id ? { ...t, ...newRecord } : t));
         }
+        else if (eventType === 'DELETE') {
+          setTasks(prev => prev.filter(t => t.id !== oldRecord.id));
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
+         // Юзерлар ўзгарса ҳаммасини янгилаш хавфсиз
+         refreshData();
       })
       .subscribe();
 
@@ -93,73 +92,108 @@ export function AppProvider({ children }) {
     NotificationService.add({ title, message: msg, type, icon }, ids).catch(console.error);
   };
 
+  // --- ТЕЗКОР АМАЛЛАР (БАЗАДАН ЖАВОБ КУТМАСДАН ИШЛАЙДИ) ---
+
   const addTask = async (taskData) => {
     const tempId = `temp-${Date.now()}`;
-    setTasks(prev => [{ ...taskData, id: tempId, created_at: new Date().toISOString(), subtasks: [], comments: [] }, ...prev]);
-    showToast("Vazifa yaratildi");
+    const optimisticTask = { 
+      ...taskData, id: tempId, created_at: new Date().toISOString(), subtasks: [], comments: [] 
+    };
+    setTasks(prev => [optimisticTask, ...prev]);
+    showToast("Вазифа яратилди");
+
     try {
       const real = await TaskService.add(taskData);
       setTasks(prev => prev.map(t => t.id === tempId ? real : t));
       const assigned = users.find(u => u.id === taskData.assignedUser);
-      TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
-      notifyAll("Yangi vazifa", `"${taskData.title}" qo'shildi`, 'task_added', 'plus');
+      if (assigned) TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
+      notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
     } catch (err) { setTasks(prev => prev.filter(t => t.id !== tempId)); }
   };
 
   const updateTask = async (id, updates) => {
+    // UI-ни дарҳол янгилаймиз
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-    showToast("O'zgarishlar saqlandi");
+    showToast("Ўзгаришлар сақланди");
+    try { 
+      await TaskService.update(id, updates);
+      // Бу ерда refreshData чақирилмайди! Real-time UPDATE келиб ўзи тўғрилайди.
+    } catch (err) { 
+      console.error(err);
+      refreshData(); // Фақат хато бўлса базадан қайта ўқиймиз
+    }
+  };
+
+  const moveTask = async (tid, ns) => {
+    // 1. UI-да дарҳол кўчирамиз
+    setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: ns, completed: ns === 'done' } : t));
+    
     try {
-      const updated = await TaskService.update(id, updates);
-      const assigned = users.find(u => u.id === (updates.assignedUser || updated.assignedUser));
-      TelegramService.sendNotification(updated, assigned, 'update').catch(console.error);
-      notifyAll("Vazifa yangilandi", `"${updated.title}" tahrirlandi`, 'task_updated', 'edit');
-    } catch (err) { refreshData(); }
+      // 2. Базага сўров юборамиз
+      await TaskService.update(tid, { status: ns, completed: ns === 'done' });
+      
+      const updatedTask = tasks.find(t => t.id === tid);
+      const assigned = users.find(u => u.id === updatedTask?.assignedUser);
+      if (assigned) {
+        TelegramService.sendNotification({ ...updatedTask, status: ns }, assigned, 'update').catch(console.error);
+      }
+    } catch (err) { 
+      console.error(err);
+      refreshData(); // Хато бўлса эски ҳолатга қайтади
+    }
   };
 
   const deleteTask = async (id) => {
     const old = [...tasks];
     const target = tasks.find(t => t.id === id);
     setTasks(prev => prev.filter(t => t.id !== id));
-    showToast("Vazifa tizimdan o'chirildi");
+    showToast("Вазифа тизимдан ўчирилди");
     try {
       if (target?.files?.length > 0) TaskService.deleteStorageFiles(target.files.map(f => f.url));
-      const assigned = users.find(u => u.id === target.assignedUser);
-      TelegramService.sendNotification(target, assigned, 'delete').catch(console.error);
       await TaskService.delete(id);
-      notifyAll("Vazifa o'chirildi", `"${target?.title}" olib tashlandi`, 'task_deleted', 'trash');
+      notifyAll("Вазифа ўчирилди", `"${target?.title}" олиб ташланди`, 'task_deleted', 'trash');
     } catch (err) { setTasks(old); }
-  };
-
-  const moveTask = async (tid, ns) => {
-    setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: ns, completed: ns === 'done' } : t));
-    try {
-      const updated = await TaskService.update(tid, { status: ns, completed: ns === 'done' });
-      const assigned = users.find(u => u.id === updated.assignedUser);
-      TelegramService.sendNotification(updated, assigned, 'update').catch(console.error);
-    } catch (err) { refreshData(); }
   };
 
   const toggleSubtask = async (tid, sid) => {
     setTasks(prev => prev.map(t => {
       if (t.id === tid) {
         const ns = (t.subtasks || []).map(s => s.id === sid ? { ...s, done: !s.done } : s);
-        const all = ns.length > 0 && ns.every(x => x.done);
-        return { ...t, subtasks: ns, status: all ? 'done' : t.status, completed: all };
+        const allDone = ns.length > 0 && ns.every(x => x.done);
+        const newStatus = allDone ? 'review' : 'progress';
+        return { ...t, subtasks: ns, status: newStatus, completed: allDone };
       }
       return t;
     }));
-    try { await TaskService.toggleSubtask(tid, sid); } catch (err) { refreshData(); }
+    try {
+      await TaskService.toggleSubtask(tid, sid);
+    } catch (err) { refreshData(); }
+  };
+
+  const approveTask = async (tid) => {
+    setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: 'done', completed: true } : t));
+    showToast("Вазифа тасдиқланди");
+    try {
+      await TaskService.update(tid, { status: 'done', completed: true });
+    } catch (err) { refreshData(); }
+  };
+
+  const rejectTask = async (tid) => {
+    setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: 'progress', completed: false } : t));
+    showToast("Вазифа рад этилди");
+    try {
+      await TaskService.update(tid, { status: 'progress', completed: false });
+    } catch (err) { refreshData(); }
   };
 
   const addComment = async (tid, txt) => {
+    const target = tasks.find(t => t.id === tid);
+    const nc = { id: Date.now(), text: txt, userName: currentUser?.fullName, createdAt: new Date().toISOString() };
+    const uc = [...(target.comments || []), nc];
+    setTasks(prev => prev.map(t => t.id === tid ? { ...t, comments: uc } : t));
     try {
-      const target = tasks.find(t => t.id === tid);
-      const nc = { id: Date.now(), text: txt, userName: currentUser?.fullName || currentUser?.fullname, createdAt: new Date().toISOString() };
-      const uc = [...(target.comments || []), nc];
-      setTasks(prev => prev.map(t => t.id === tid ? { ...t, comments: uc } : t));
       await TaskService.update(tid, { comments: uc });
-      showToast("Izoh qo'shildi");
+      showToast("Изоҳ қўшилди");
     } catch (err) { console.error(err); }
   };
 
@@ -181,47 +215,12 @@ export function AppProvider({ children }) {
       tasks, users, departments, notifications, unreadCount: notifications.filter(n => !n.read).length,
       language, darkMode, t,
       login, logout: () => { setCurrentUser(null); StorageService.remove('taskflow_session'); },
-      addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask,
-      addUser: async (d) => {
-        setIsActionLoading(true);
-        try {
-          const res = await UserService.add(d);
-          setUsers(prev => [...prev, res]);
-          showToast("Xodim qo'shildi");
-        } finally { setIsActionLoading(false); }
-      },
-      updateUser: async (id, data) => {
-        setIsActionLoading(true);
-        try {
-          const res = await UserService.update(id, data);
-          setUsers(prev => prev.map(u => u.id === id ? res : u));
-          showToast("Ma'lumotlar yangilandi");
-        } finally { setIsActionLoading(false); }
-      },
-      deleteUser: async (id) => {
-        setIsActionLoading(true);
-        try {
-          await UserService.delete(id);
-          setUsers(prev => prev.filter(u => u.id !== id));
-          showToast("Xodim o'chirildi");
-        } finally { setIsActionLoading(false); }
-      },
-      addDepartment: async (n) => {
-        setIsActionLoading(true);
-        try {
-          await UserService.addDepartment(n);
-          setDepartments(prev => [...prev, n]);
-          showToast("Yo'nalish qo'shildi");
-        } finally { setIsActionLoading(false); }
-      },
-      deleteDepartment: async (n) => {
-        setIsActionLoading(true);
-        try {
-          await UserService.deleteDepartment(n);
-          setDepartments(prev => prev.filter(d => d !== n));
-          showToast("Yo'nalish olib tashlandi");
-        } finally { setIsActionLoading(false); }
-      },
+      addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask,
+      addUser: async (d) => { setIsActionLoading(true); try { await UserService.add(d); await refreshData(); } finally { setIsActionLoading(false); } },
+      updateUser: async (id, data) => { setIsActionLoading(true); try { await UserService.update(id, data); await refreshData(); } finally { setIsActionLoading(false); } },
+      deleteUser: async (id) => { setIsActionLoading(true); try { await UserService.delete(id); await refreshData(); } finally { setIsActionLoading(false); } },
+      addDepartment: async (n) => { setIsActionLoading(true); try { await UserService.addDepartment(n); await refreshData(); } finally { setIsActionLoading(false); } },
+      deleteDepartment: async (n) => { setIsActionLoading(true); try { await UserService.deleteDepartment(n); await refreshData(); } finally { setIsActionLoading(false); } },
       markNotifRead: (id) => { setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); NotificationService.markRead(currentUser.id, id); },
       markAllNotifRead: () => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); NotificationService.markAllRead(currentUser.id); },
       changeLanguage: (l) => { setLanguage(l); StorageService.set('taskflow_lang', l); },

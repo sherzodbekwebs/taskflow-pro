@@ -3,11 +3,11 @@ import { useApp } from '../contexts/AppContext';
 import TaskModal from '../components/tasks/TaskModal';
 import KanbanBoard from '../components/tasks/KanbanBoard';
 import TaskCard from '../components/tasks/TaskCard';
-import { 
-  Plus, Search, LayoutGrid, List, X, CheckCircle2, 
+import {
+  Plus, Search, LayoutGrid, List, X, CheckCircle2,
   AlertTriangle, Filter, TableProperties, User as UserIcon, Calendar as CalendarIcon,
   RefreshCw,
-  Printer 
+  Printer
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { uz } from 'date-fns/locale';
@@ -18,7 +18,7 @@ export default function TasksPage() {
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [taskToDelete, setTaskToDelete] = useState(null);
-  const [view, setView] = useState('kanban'); 
+  const [view, setView] = useState('kanban');
   const [defaultStatus, setDefaultStatus] = useState('new');
 
   const statusLabels = {
@@ -35,7 +35,7 @@ export default function TasksPage() {
     const weekdays = ["", "Душанба", "Сешанба", "Чоршанба", "Пайшанба", "Жума", "Шанба", "Якшанба"];
     switch (task.recurring_type) {
       case 'daily': return "Ҳар куни";
-      case 'weekly': return `Ҳар ҳафта (${weekdays[task.recurring_value] || ""})`;
+      case 'weekly': return `Ҳар ҳаfta (${weekdays[task.recurring_value] || ""})`;
       case 'monthly': return `Ҳар ой (${task.recurring_value}-сана)`;
       case 'quarterly': return `Ҳар чорак (${task.recurring_value}-сана)`;
       case 'yearly': return `Ҳар йил (${task.recurring_value}-сана)`;
@@ -120,9 +120,9 @@ export default function TasksPage() {
 
             <div className="flex items-center gap-2 flex-shrink-0 flex-nowrap">
               {view === 'table' && (
-                <button 
+                <button
                   onClick={handlePrint}
-                  title="Чоп этиш" 
+                  title="Чоп etish"
                   className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-primary-500 border border-slate-100 dark:border-slate-700 transition-all"
                 >
                   <Printer size={18} />
@@ -173,7 +173,7 @@ export default function TasksPage() {
       <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar pb-10 print:overflow-visible">
         <div className="min-w-full">
           {view === 'kanban' ? (
-            <div className="mt-1 min-w-[1200px] lg:min-w-0"> 
+            <div className="mt-1 min-w-[1200px] lg:min-w-0">
               <KanbanBoard tasks={filtered} onAddTask={handleAddTask} onEditTask={(t) => { setEditTask(t); setShowModal(true); }} onDeleteTask={(t) => setTaskToDelete(t)} />
             </div>
           ) : view === 'list' ? (
@@ -190,14 +190,15 @@ export default function TasksPage() {
                     <th className="px-4 py-4 w-12 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center print:text-black">№</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">Вазифа номи</th>
                     <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">Масъул</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right print:text-black">Муддат / Такрорланиш</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">Яратилган вақти</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right print:text-black">Муддат</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                   {filtered.map((task, index) => {
                     const assigned = users.find(u => u.id === task.assignedUser);
                     return (
-                      <tr key={task.id} 
+                      <tr key={task.id}
                         onClick={() => setEditTask(task) || setShowModal(true)}
                         className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors group print:break-inside-avoid"
                       >
@@ -212,23 +213,29 @@ export default function TasksPage() {
                             </span>
                           </div>
                         </td>
+                        
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                             <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 print:hidden">
-                               {(assigned?.fullName || assigned?.fullname || "?")[0]}
-                             </div>
-                             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 print:text-black">
-                               {assigned?.fullName || assigned?.fullname || "—"}
-                             </span>
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 print:hidden">
+                              {(assigned?.fullName || assigned?.fullname || "?")[0]}
+                            </div>
+                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 print:text-black">
+                              {assigned?.fullName || assigned?.fullname || "—"}
+                            </span>
                           </div>
                         </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 print:text-black">
+                            {task.created_at ? format(new Date(task.created_at), 'dd.MM.yyyy HH:mm', { locale: uz }) : "—"}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 text-right">
-                           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 print:border-none print:bg-transparent">
-                              {task.is_recurring ? <RefreshCw size={14} className="text-primary-500 print:hidden" /> : <CalendarIcon size={14} className="text-slate-400 print:hidden" />}
-                              <span className={`text-[11px] font-bold ${task.is_recurring ? 'text-primary-600' : 'text-slate-500'} print:text-black print:text-[10pt]`}>
-                                {getDeadlineDisplay(task)}
-                              </span>
-                           </div>
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 print:border-none print:bg-transparent">
+                            {task.is_recurring ? <RefreshCw size={14} className="text-primary-500 print:hidden" /> : <CalendarIcon size={14} className="text-slate-400 print:hidden" />}
+                            <span className={`text-[11px] font-bold ${task.is_recurring ? 'text-primary-600' : 'text-slate-500'} print:text-black print:text-[10pt]`}>
+                              {getDeadlineDisplay(task)}
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -237,7 +244,7 @@ export default function TasksPage() {
               </table>
             </div>
           )}
-          
+
           {filtered.length === 0 && (
             <div className="py-20 text-center opacity-30 print:hidden">
               <p className="text-sm font-bold uppercase tracking-widest">{t.noTasksFound || "Маълумот мавжуд эмас"}</p>
@@ -261,7 +268,8 @@ export default function TasksPage() {
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media print {
           @page { size: auto; margin: 10mm; }
           body * { visibility: hidden; }

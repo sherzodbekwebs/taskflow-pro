@@ -5,13 +5,13 @@ import { Plus } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask }) {
-  const { moveTask } = useApp();
+  // context'dan hasAccess olindi (adminlikni tekshirish uchun)
+  const { moveTask, hasAccess } = useApp();
 
-  // Статуслар рўйхатига 'review' (Текширувда) қўшилди
   const columns = {
     new: { title: 'Янги', color: 'bg-blue-500' },
     progress: { title: 'Жараёнда', color: 'bg-amber-500' },
-    review: { title: 'Текширувда', color: 'bg-purple-500' }, // ЯНГИ УСТУН
+    review: { title: 'Текширувда', color: 'bg-purple-500' },
     done: { title: 'Тугалланган', color: 'bg-green-500' }
   };
 
@@ -19,12 +19,19 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
     const { destination, source, draggableId } = result;
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
-    moveTask(draggableId, destination.droppableId);
+
+    let targetStatus = destination.droppableId;
+
+    // --- YANGI MANTIQ: Oddiy ishchi 'done'ga sursa, 'review'ga tushadi ---
+    if (targetStatus === 'done' && !hasAccess) {
+      targetStatus = 'review';
+    }
+
+    moveTask(draggableId, targetStatus);
   };
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      {/* grid-cols-4 қилинди, чунки энди устунлар 4 та */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-start w-full min-w-[1200px] lg:min-w-0">
         {Object.entries(columns).map(([status, info]) => {
           const columnTasks = tasks.filter(t => t.status === status);
@@ -34,7 +41,6 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
               key={status} 
               className="flex flex-col min-h-[500px] w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden shadow-none"
             >
-              {/* Устун Сарлавҳаси */}
               <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
                 <div className="flex items-center gap-2">
                   <div className={`w-2.5 h-2.5 rounded-full ${info.color}`} />

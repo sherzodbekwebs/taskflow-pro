@@ -60,14 +60,11 @@ export function AppProvider({ children }) {
     };
     init();
 
-    // --- REAL-TIME ЛИСТЕНЕР (Tuzatildi) ---
     const ch = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (p) => {
         const { eventType, new: newRecord, old: oldRecord } = p;
-        
         if (eventType === 'INSERT') {
           setTasks(prev => {
-            // Agar vazifa allaqachon ro'yxatda bo'lsa (optimistik qo'shilgan bo'lsa), qo'shmaymiz
             if (prev.some(t => t.id === newRecord.id)) return prev;
             return [newRecord, ...prev];
           });
@@ -87,44 +84,32 @@ export function AppProvider({ children }) {
     return () => supabase.removeChannel(ch);
   }, [refreshData]);
 
+  const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod';
+  const hasAccess = isSuperAdmin || currentUser?.has_admin_access === true;
+
   const notifyAll = (title, msg, type, icon) => {
     const ids = users.map(u => u.id);
     NotificationService.add({ title, message: msg, type, icon }, ids).catch(console.error);
   };
 
-  // --- ADDTASK (Tuzatildi) ---
   const addTask = async (taskData) => {
     const tempId = `temp-${Date.now()}`;
     const optimisticTask = { 
       ...taskData, 
       id: tempId, 
-      created_at: new Date().toISOString(), 
+      created_at: taskData.created_at || new Date().toISOString(), 
       subtasks: taskData.subtasks || [], 
       comments: [] 
     };
-    
     setTasks(prev => [optimisticTask, ...prev]);
     showToast("Вазифа яратилди");
-
     try {
       const real = await TaskService.add(taskData);
-      
-      setTasks(prev => {
-        // Temp vazifani o'chirib, o'rniga bazadan kelgan real vazifani qo'yamiz
-        const filtered = prev.filter(t => t.id !== tempId);
-        // Agar listener allaqachon qo'shib ulgurgan bo'lsa, dublikat qilmaslik uchun tekshiramiz
-        if (filtered.some(t => t.id === real.id)) return filtered;
-        return [real, ...filtered];
-      });
-
+      setTasks(prev => prev.map(t => t.id === tempId ? real : t));
       const assigned = users.find(u => u.id === taskData.assignedUser);
       if (assigned) TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
       notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
-    } catch (err) { 
-      // Xatolik bo'lsa tempni o'chirib tashlaymiz
-      setTasks(prev => prev.filter(t => t.id !== tempId));
-      showToast("Xatolik yuz berdi");
-    }
+    } catch (err) { setTasks(prev => prev.filter(t => t.id !== tempId)); }
   };
 
   const updateTask = async (id, updates) => {
@@ -133,43 +118,56 @@ export function AppProvider({ children }) {
     try { await TaskService.update(id, updates); } catch (err) { console.error(err); refreshData(); }
   };
 
+  // --- MOVETASK: Tuzatildi (Ishchi 'done'ga o'tkazolmaydi) ---
   const moveTask = async (tid, ns) => {
-    setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: ns, completed: ns === 'done' } : t));
+    let targetStatus = ns;
+    
+    // Agar foydalanuvchi admin bo'lmasa va vazifani 'done'ga sursa, uni 'review'ga qaytaramiz
+    if (targetStatus === 'done' && !hasAccess) {
+      targetStatus = 'review';
+      showToast("Вазифа текширувга юборилди");
+    }
+
+    const isDone = targetStatus === 'done';
+    const updates = { 
+        status: targetStatus, 
+        completed: isDone,
+        updated_at: new Date().toISOString()
+    };
+
+    setTasks(prev => prev.map(t => t.id === tid ? { ...t, ...updates } : t));
+
     try {
-      await TaskService.update(tid, { status: ns, completed: ns === 'done' });
+      await TaskService.update(tid, updates);
       const updatedTask = tasks.find(t => t.id === tid);
       const assigned = users.find(u => u.id === updatedTask?.assignedUser);
-      if (assigned) TelegramService.sendNotification({ ...updatedTask, status: ns }, assigned, 'update').catch(console.error);
+      if (assigned) TelegramService.sendNotification({ ...updatedTask, ...updates }, assigned, 'update').catch(console.error);
     } catch (err) { console.error(err); refreshData(); }
   };
 
-  // --- DELETETASK (Tuzatildi) ---
   const deleteTask = async (id) => {
-    const oldTasks = [...tasks];
+    const old = [...tasks];
     const target = tasks.find(t => t.id === id);
-    
-    // Optimistik o'chirish
     setTasks(prev => prev.filter(t => t.id !== id));
     showToast("Вазифа тизимдан ўчирилди");
-
     try {
       if (target?.files?.length > 0) TaskService.deleteStorageFiles(target.files.map(f => f.url));
       await TaskService.delete(id);
       notifyAll("Вазифа ўчирилди", `"${target?.title}" олиб ташланди`, 'task_deleted', 'trash');
-    } catch (err) { 
-      // Xatolik bo'lsa orqaga qaytaramiz
-      setTasks(oldTasks); 
-      showToast("O'chirishda xatolik");
-    }
+    } catch (err) { setTasks(old); }
   };
 
+  // --- TOGGLESUBTASK: Tuzatildi (100% bo'lsa 'review'ga o'tadi) ---
   const toggleSubtask = async (tid, sid) => {
     setTasks(prev => prev.map(t => {
       if (t.id === tid) {
         const ns = (t.subtasks || []).map(s => s.id === sid ? { ...s, done: !s.done } : s);
         const allDone = ns.length > 0 && ns.every(x => x.done);
+        
+        // Hamma sub-tasklar bajarilganda status avtomatik 'review' bo'ladi
         const newStatus = allDone ? 'review' : 'progress';
-        return { ...t, subtasks: ns, status: newStatus, completed: allDone };
+        
+        return { ...t, subtasks: ns, status: newStatus, completed: false };
       }
       return t;
     }));
@@ -208,9 +206,6 @@ export function AppProvider({ children }) {
       return res;
     } finally { setIsActionLoading(false); }
   };
-
-  const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod';
-  const hasAccess = isSuperAdmin || currentUser?.has_admin_access === true;
 
   return (
     <AppContext.Provider value={{

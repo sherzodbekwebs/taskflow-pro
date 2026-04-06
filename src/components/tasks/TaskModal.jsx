@@ -11,11 +11,11 @@ export default function TaskModal({ task, onClose }) {
 
   const [form, setForm] = useState({
     title: '', description: '', status: 'new',
-    assignedUser: '', department: '', deadline: '', 
+    assignedUser: '', department: '', deadline: '',
     created_at: new Date().toISOString().split('T')[0],
     subtasks: [], files: [],
-    is_recurring: false, 
-    recurring_type: 'none', 
+    is_recurring: false,
+    recurring_type: 'none',
     recurring_value: 1,
     recurring_value_end: 10
   });
@@ -59,36 +59,44 @@ export default function TaskModal({ task, onClose }) {
     } catch (err) { alert("Xatolik: " + err.message); } finally { setIsUploading(false); }
   };
 
-  const handleSubmit = (e) => {
+const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.title.trim() || isUploading) return;
 
-    let finalRecurringValue = form.recurring_value;
-    if (['monthly', 'quarterly', 'yearly'].includes(form.recurring_type)) {
-      finalRecurringValue = {
-        start: parseInt(form.recurring_value),
-        end: parseInt(form.recurring_value_end)
+    // 1. Takrorlanish qiymatini shakllantirish
+    let rValue = parseInt(form.recurring_value) || 1;
+    if (form.is_recurring && ['monthly', 'quarterly', 'yearly'].includes(form.recurring_type)) {
+      rValue = {
+        start: parseInt(form.recurring_value) || 1,
+        end: parseInt(form.recurring_value_end) || 10
       };
     }
 
+    // 2. FAQAT bazada bor ustunlarni ajratib olamiz (Bu xatolikni oldini oladi)
     const data = {
-      ...form, 
+      title: form.title.trim(),
+      description: form.description || null,
+      status: form.status || 'new',
       assignedUser: form.assignedUser === "" ? null : form.assignedUser,
       department: form.department === "" ? null : form.department,
-      subtasks: form.subtasks.filter(s => s.text.trim()),
       deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
-      created_at: new Date(form.created_at).toISOString(),
-      updated_at: new Date().toISOString(),
+      subtasks: form.subtasks.filter(s => s.text.trim()),
+      files: form.files || [],
+      is_recurring: form.is_recurring,
       recurring_type: form.is_recurring ? form.recurring_type : 'none',
-      recurring_value: finalRecurringValue
+      recurring_value: form.is_recurring ? rValue : null,
+      created_at: form.created_at ? new Date(form.created_at).toISOString() : new Date().toISOString()
     };
 
-    if (isEdit) updateTask(task.id, data);
-    else addTask(data);
+    // 3. Saqlash
+    if (isEdit) {
+      updateTask(task.id, data);
+    } else {
+      addTask(data);
+    }
     onClose(true);
   };
-
-  return (
+  return ( 
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 rounded-[0.7rem] w-full max-w-6xl max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800 shadow-none overflow-hidden">
         <div className="flex items-center justify-between px-8 py-5 border-b dark:border-slate-800">
@@ -101,14 +109,14 @@ export default function TaskModal({ task, onClose }) {
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 py-6 custom-scrollbar">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
+
             {/* CHAP TOMON */}
             <div className="lg:col-span-7 space-y-6">
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t.taskTitle} *</label>
                 <input className="input text-base font-semibold py-3 px-4 rounded-xl border-slate-200 w-full" value={form.title} onChange={e => set('title', e.target.value)} required />
               </div>
-              
+
               <div className="p-5 bg-primary-50/30 dark:bg-primary-900/10 rounded-2xl border border-primary-100 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -116,8 +124,8 @@ export default function TaskModal({ task, onClose }) {
                     <p className="text-sm font-bold dark:text-white">Такрорланувчи вазифа</p>
                   </div>
                   <input type="checkbox" className="w-6 h-6 accent-primary-500" checked={form.is_recurring} onChange={e => {
-                      set('is_recurring', e.target.checked);
-                      if(e.target.checked && form.recurring_type === 'none') set('recurring_type', 'daily');
+                    set('is_recurring', e.target.checked);
+                    if (e.target.checked && form.recurring_type === 'none') set('recurring_type', 'daily');
                   }} />
                 </div>
 
@@ -151,7 +159,7 @@ export default function TaskModal({ task, onClose }) {
               </div>
 
               <div><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2"><AlignLeft size={12} /> {t.detailedDescription}</label><textarea className="input min-h-[160px] py-3 px-4 rounded-xl border-slate-200 w-full" value={form.description} onChange={e => set('description', e.target.value)} /></div>
-              
+
               <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
                 <div className="flex items-center justify-between mb-3"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.taskFiles}</label><button type="button" onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black text-primary-500">+ {t.add}</button></div>
                 <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileAdd} />
@@ -167,7 +175,7 @@ export default function TaskModal({ task, onClose }) {
                 <div className="space-y-1">
                   <label className="text-[9px] font-bold text-slate-400 uppercase">Ҳолат</label>
                   <select className="input h-9 text-[11px] font-bold rounded-lg w-full" value={form.status} onChange={e => set('status', e.target.value)}>
-                    <option value="new">Янги</option><option value="progress">Жараёнда</option><option value="review">Текширувда</option><option value="done">Тугалланган</option>
+                    <option value="new">Янги</option><option value="progress">Жараёнда</option>
                   </select>
                 </div>
                 <div className="space-y-1">

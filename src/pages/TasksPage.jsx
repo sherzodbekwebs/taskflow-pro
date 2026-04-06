@@ -194,53 +194,76 @@ export default function TasksPage() {
                     <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right print:text-black">Муддат</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                  {filtered.map((task, index) => {
-                    const assigned = users.find(u => u.id === task.assignedUser);
-                    return (
-                      <tr key={task.id}
-                        onClick={() => setEditTask(task) || setShowModal(true)}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors group print:break-inside-avoid"
-                      >
-                        <td className="px-4 py-4 text-center text-xs font-bold text-slate-400 print:text-black">
-                          {index + 1}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-1 h-8 rounded-full ${getStatusColor(task.status)} print:hidden`} />
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary-500 transition-colors print:text-black">
-                              {task.title}
-                            </span>
-                          </div>
-                        </td>
-                        
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 print:hidden">
-                              {(assigned?.fullName || assigned?.fullname || "?")[0]}
-                            </div>
-                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 print:text-black">
-                              {assigned?.fullName || assigned?.fullname || "—"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 print:text-black">
-                            {task.created_at ? format(new Date(task.created_at), 'dd.MM.yyyy HH:mm', { locale: uz }) : "—"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 print:border-none print:bg-transparent">
-                            {task.is_recurring ? <RefreshCw size={14} className="text-primary-500 print:hidden" /> : <CalendarIcon size={14} className="text-slate-400 print:hidden" />}
-                            <span className={`text-[11px] font-bold ${task.is_recurring ? 'text-primary-600' : 'text-slate-500'} print:text-black print:text-[10pt]`}>
-                              {getDeadlineDisplay(task)}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+  {filtered.map((task, index) => {
+    const assigned = users.find(u => u.id === task.assignedUser);
+    return (
+      <tr key={task.id} 
+        onClick={() => setEditTask(task) || setShowModal(true)}
+        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors group print:break-inside-avoid"
+      >
+        <td className="px-4 py-4 text-center text-xs font-bold text-slate-400 print:text-black">
+          {index + 1}
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-4">
+            {/* 1. STATUS CHIZIG'I: Qalinroq (w-2) va balandroq (h-10) qilindi */}
+            <div className={`w-2 h-10 rounded-full shrink-0 ${getStatusColor(task.status)} print:hidden shadow-sm`} />
+            
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary-500 transition-colors print:text-black leading-tight">
+                {task.title}
+              </span>
+              
+              {/* 2. STATUS BADGE: Rang nimaligini yozuvda tushuntiradi */}
+              <div className="flex items-center gap-2">
+                <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter text-white ${getStatusColor(task.status)}`}>
+                  {statusLabels[task.status]}
+                </span>
+                {task.department && (
+                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                     • {task.department}
+                   </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </td>
+
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+             <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 print:hidden">
+               {(assigned?.fullName || assigned?.fullname || "?")[0]}
+             </div>
+             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 print:text-black">
+               {assigned?.fullName || assigned?.fullname || "—"}
+             </span>
+          </div>
+        </td>
+
+        <td className="px-6 py-4">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 print:text-black">
+              {task.created_at ? format(new Date(task.created_at), 'dd.MM.yyyy') : "—"}
+            </span>
+            <span className="text-[10px] text-slate-400">
+              {task.created_at ? format(new Date(task.created_at), 'HH:mm') : ""}
+            </span>
+          </div>
+        </td>
+
+        <td className="px-6 py-4 text-right">
+           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 print:border-none print:bg-transparent">
+              {task.is_recurring ? <RefreshCw size={14} className="text-primary-500 print:hidden" /> : <CalendarIcon size={14} className="text-slate-400 print:hidden" />}
+              <span className={`text-[11px] font-bold ${task.is_recurring ? 'text-primary-600' : 'text-slate-500'} print:text-black print:text-[10pt]`}>
+                {getDeadlineDisplay(task)}
+              </span>
+           </div>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
               </table>
             </div>
           )}

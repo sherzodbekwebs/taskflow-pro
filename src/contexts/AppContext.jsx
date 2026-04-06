@@ -26,7 +26,6 @@ export function AppProvider({ children }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
-  // Маълумотларни базадан олиш
   const refreshData = useCallback(async () => {
     try {
       const [allTasks, allUsers, allDeps] = await Promise.all([
@@ -36,14 +35,12 @@ export function AppProvider({ children }) {
       ]);
       setTasks(allTasks); setUsers(allUsers); setDepartments(allDeps);
       
-      // СЕССИЯНИ sessionStorage'ДАН ОЛАМИЗ
       const sid = window.sessionStorage.getItem('taskflow_session');
       if (sid) { const n = await NotificationService.getByUser(sid); setNotifications(n); }
     } catch (err) { console.error(err); }
   }, []);
 
   useEffect(() => {
-    // СЕССИЯНИ sessionStorage'ДАН ОЛАМИЗ
     const sid = window.sessionStorage.getItem('taskflow_session');
 
     const init = async () => {
@@ -63,14 +60,16 @@ export function AppProvider({ children }) {
     };
     init();
 
-    // --- REAL-TIME ЛИСТЕНЕР ---
+    // --- REAL-TIME ЛИСТЕНЕР (Tuzatildi) ---
     const ch = supabase.channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (p) => {
         const { eventType, new: newRecord, old: oldRecord } = p;
+        
         if (eventType === 'INSERT') {
           setTasks(prev => {
+            // Agar vazifa allaqachon ro'yxatda bo'lsa (optimistik qo'shilgan bo'lsa), qo'shmaymiz
             if (prev.some(t => t.id === newRecord.id)) return prev;
-            return [newRecord, ...prev.filter(t => !String(t.id).startsWith('temp-'))];
+            return [newRecord, ...prev];
           });
         }
         else if (eventType === 'UPDATE') {
@@ -93,20 +92,39 @@ export function AppProvider({ children }) {
     NotificationService.add({ title, message: msg, type, icon }, ids).catch(console.error);
   };
 
+  // --- ADDTASK (Tuzatildi) ---
   const addTask = async (taskData) => {
     const tempId = `temp-${Date.now()}`;
     const optimisticTask = { 
-      ...taskData, id: tempId, created_at: new Date().toISOString(), subtasks: [], comments: [] 
+      ...taskData, 
+      id: tempId, 
+      created_at: new Date().toISOString(), 
+      subtasks: taskData.subtasks || [], 
+      comments: [] 
     };
+    
     setTasks(prev => [optimisticTask, ...prev]);
     showToast("Вазифа яратилди");
+
     try {
       const real = await TaskService.add(taskData);
-      setTasks(prev => prev.map(t => t.id === tempId ? real : t));
+      
+      setTasks(prev => {
+        // Temp vazifani o'chirib, o'rniga bazadan kelgan real vazifani qo'yamiz
+        const filtered = prev.filter(t => t.id !== tempId);
+        // Agar listener allaqachon qo'shib ulgurgan bo'lsa, dublikat qilmaslik uchun tekshiramiz
+        if (filtered.some(t => t.id === real.id)) return filtered;
+        return [real, ...filtered];
+      });
+
       const assigned = users.find(u => u.id === taskData.assignedUser);
       if (assigned) TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
       notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
-    } catch (err) { setTasks(prev => prev.filter(t => t.id !== tempId)); }
+    } catch (err) { 
+      // Xatolik bo'lsa tempni o'chirib tashlaymiz
+      setTasks(prev => prev.filter(t => t.id !== tempId));
+      showToast("Xatolik yuz berdi");
+    }
   };
 
   const updateTask = async (id, updates) => {
@@ -125,16 +143,24 @@ export function AppProvider({ children }) {
     } catch (err) { console.error(err); refreshData(); }
   };
 
+  // --- DELETETASK (Tuzatildi) ---
   const deleteTask = async (id) => {
-    const old = [...tasks];
+    const oldTasks = [...tasks];
     const target = tasks.find(t => t.id === id);
+    
+    // Optimistik o'chirish
     setTasks(prev => prev.filter(t => t.id !== id));
     showToast("Вазифа тизимдан ўчирилди");
+
     try {
       if (target?.files?.length > 0) TaskService.deleteStorageFiles(target.files.map(f => f.url));
       await TaskService.delete(id);
       notifyAll("Вазифа ўчирилди", `"${target?.title}" олиб ташланди`, 'task_deleted', 'trash');
-    } catch (err) { setTasks(old); }
+    } catch (err) { 
+      // Xatolik bo'lsa orqaga qaytaramiz
+      setTasks(oldTasks); 
+      showToast("O'chirishda xatolik");
+    }
   };
 
   const toggleSubtask = async (tid, sid) => {
@@ -176,7 +202,6 @@ export function AppProvider({ children }) {
       const res = await UserService.getByCredentials(u, p);
       if (res) { 
         setCurrentUser(res); 
-        // localStorage ЎРНИГА sessionStorage ИШЛАТИЛАДИ
         window.sessionStorage.setItem('taskflow_session', res.id); 
         await refreshData(); 
       }
@@ -195,7 +220,6 @@ export function AppProvider({ children }) {
       login, 
       logout: () => { 
         setCurrentUser(null); 
-        // СЕССИЯНИ sessionStorage'ДАН ЎЧИРИШ
         window.sessionStorage.removeItem('taskflow_session'); 
       },
       addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask,

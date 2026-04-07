@@ -4,7 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import TaskModal from '../components/tasks/TaskModal';
 import {
   ArrowLeft, Calendar, User, AlignLeft,
-  CheckCircle2, Circle, Paperclip, FileText, Download, X, Eye, Edit3, Trash2, ShieldAlert, RefreshCw, Check, Undo2, Layers
+  CheckCircle2, Circle, Paperclip, FileText, Download, X, Eye, Edit3, Trash2, ShieldAlert, RefreshCw, Check, Undo2, Layers, CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { uz } from 'date-fns/locale';
@@ -12,8 +12,14 @@ import { uz } from 'date-fns/locale';
 export default function TaskDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { tasks, users, toggleSubtask, t, currentUser, isSuperAdmin, hasAccess, deleteTask, approveTask, rejectTask, updateTask } = useApp();
   
+  // SHU YERGA moveTask VA isActionLoading QO'SHILDI:
+  const { 
+    tasks, users, toggleSubtask, currentUser, isSuperAdmin, 
+    hasAccess, deleteTask, approveTask, rejectTask, 
+    updateTask, moveTask, isActionLoading 
+  } = useApp();
+
   const task = useMemo(() => tasks.find(t => t.id === id), [id, tasks]);
 
   const [zoomImage, setZoomImage] = useState(null);
@@ -66,25 +72,43 @@ export default function TaskDetailPage() {
   return (
     <>
       <div className="fixed top-16 left-0 lg:left-64 right-0 bottom-0 bg-[#e9eef2] dark:bg-slate-950 z-10 p-4 lg:p-6 flex flex-col overflow-hidden animate-fade-in font-sans">
-        
+
         {/* 1. HEADER SECTION */}
         <div className="flex-shrink-0 space-y-4 mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-primary-500 transition-all font-bold uppercase text-[10px] tracking-widest w-fit">
               <ArrowLeft size={16} /> ОРҚАГА ҚАЙТИШ
             </button>
-            
-            <div className="flex gap-2 w-full sm:w-auto">
-              {task.status === 'review' && (isSuperAdmin || hasAccess) && (
+
+            <div className="flex gap-2 w-full sm:w-auto items-center">
+              {/* ADMIN APPROVE/REJECT BUTTONS */}
+              {task.status === 'review' && isAdminOnly && (
                 <div className="flex gap-2 flex-1 sm:flex-none mr-4">
-                   <button onClick={handleReject} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-amber-600">
-                      <Undo2 size={14} /> Рад этиш
-                   </button>
-                   <button onClick={handleApprove} className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-green-600">
-                      <Check size={14} /> Тасдиқлаш
-                   </button>
+                  <button onClick={handleReject} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-amber-600">
+                    <Undo2 size={14} /> Рад этиш
+                  </button>
+                  <button onClick={handleApprove} className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-green-600">
+                    <Check size={14} /> Тасдиқлаш
+                  </button>
                 </div>
               )}
+
+              {/* FINISH TASK BUTTON (Tepada) */}
+              {task.status !== 'review' && task.status !== 'done' && (
+                <button
+                  onClick={() => moveTask(task.id, 'review')}
+                  disabled={isActionLoading}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-500 text-white px-5 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 disabled:opacity-50"
+                >
+                  {isActionLoading ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <CheckCircle size={14} />
+                  )}
+                  Вазифани тугатиш
+                </button>
+              )}
+
               <button onClick={() => canModify ? setShowDeleteConfirm(true) : setShowNoPerm(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-[0.7rem] text-slate-400 hover:text-red-500 transition-all uppercase text-[10px] font-bold tracking-widest">
                 <Trash2 size={14} /> Ўчириш
               </button>
@@ -102,7 +126,9 @@ export default function TaskDetailPage() {
                     {task.title}
                   </h1>
                   <div className="flex gap-1 flex-shrink-0 mt-1">
-                    <span className={`badge-${task.status} px-2 py-0.5 text-[9px] font-bold uppercase`}>{task.status === 'review' ? 'Текширувда' : task.status}</span>
+                    <span className={`badge-${task.status} px-2 py-0.5 text-[9px] font-bold uppercase`}>
+                       {task.status === 'review' ? 'Текширувда' : (task.status === 'done' ? 'Тугалланган' : task.status)}
+                    </span>
                     <span className={`badge-${task.priority} px-2 py-0.5 text-[9px] font-bold uppercase`}>{task.priority}</span>
                   </div>
                 </div>
@@ -125,7 +151,6 @@ export default function TaskDetailPage() {
 
         {/* 2. BODY SECTION */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
-          {/* LEFT SCROLL (Hujjatlar + Tafsif) */}
           <div className="lg:col-span-8 overflow-y-auto p-1 space-y-4 custom-scrollbar">
             <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem]">
               <div className="flex items-center gap-2 text-slate-400 mb-6 font-bold uppercase text-[10px] tracking-widest"><Paperclip size={16} className="text-primary-500" /> Бириктирилган ҳужжатлар</div>
@@ -150,41 +175,37 @@ export default function TaskDetailPage() {
             </div>
           </div>
 
-          {/* RIGHT SCROLL (Vazifalar ruyxati + Finish Button) */}
           <div className="lg:col-span-4 flex flex-col bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden">
             <div className="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50/50">
               <h3 className="text-[10px] font-bold uppercase tracking-wider dark:text-white">Вазифалар рўйхати</h3>
               <span className="text-[10px] bg-primary-500 text-white px-2 py-0.5 rounded font-bold">{totalCount}</span>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2">
               {task.subtasks && task.subtasks.length > 0 ? (
-                // РЎЙХАТ БОР БЎЛСА
                 task.subtasks.map((st, idx) => (
-                  <button key={st.id || idx} onClick={() => toggleSubtask(task.id, st.id)}
-                    className={`w-full flex items-start gap-3 p-3.5 rounded-[0.7rem] border transition-all text-left group ${st.done ? 'bg-green-50/30 dark:bg-green-900/5 border-green-100 dark:border-green-900/20' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-primary-300 shadow-sm'}`}
+                  <button key={st.id || idx} onClick={() => toggleSubtask(task.id, st.id)} disabled={isActionLoading}
+                    className={`w-full flex items-start gap-3 p-3.5 rounded-[0.7rem] border transition-all text-left group disabled:opacity-70 ${st.done ? 'bg-green-50/30 dark:bg-green-900/5 border-green-100 dark:border-green-900/20' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-primary-300 shadow-sm'}`}
                   >
                     <div className={`mt-0.5 flex-shrink-0 transition-all ${st.done ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>{st.done ? <CheckCircle2 size={18} /> : <Circle size={18} />}</div>
                     <span className={`text-[12px] font-bold leading-tight break-words flex-1 ${st.done ? 'line-through text-slate-400 font-medium' : 'text-slate-700 dark:text-slate-200'}`}>{st.text}</span>
                   </button>
                 ))
               ) : (
-                // РЎЙХАТ БЎШ БЎЛСА - "ВАЗИФАНИ ЯКУНЛАШ" ТУГМАСИ
                 <div className="text-center py-10 space-y-4">
                   <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto opacity-30">
                     <Layers size={32} className="text-slate-400" />
                   </div>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest px-4">
-                    Босқичлар белгиланмаган
-                  </p>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest px-4">Босқичлар белгиланмаган</p>
                   
-                  {/* Текширувга юбориш тугмаси (Review ёки Done бўлмаса чиқади) */}
+                  {/* FINISH TASK BUTTON (Pastda - subtask bo'lmasa chiqadi) */}
                   {task.status !== 'review' && task.status !== 'done' && (
-                    <button 
-                      onClick={() => updateTask(task.id, { status: 'review' })}
-                      className="w-full bg-primary-500 hover:bg-primary-600 text-white font-black py-4 px-4 rounded-[0.7rem] text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg shadow-primary-500/20 active:scale-95 mt-4"
+                    <button
+                      onClick={() => moveTask(task.id, 'review')}
+                      disabled={isActionLoading}
+                      className="w-full bg-primary-500 hover:bg-primary-600 text-white font-black py-4 px-4 rounded-[0.7rem] text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg shadow-primary-500/20 active:scale-95 mt-4 disabled:opacity-50"
                     >
-                      Вазифани якунлаш
+                      {isActionLoading ? "Юкланмоқда..." : "Вазифани якунлаш"}
                     </button>
                   )}
                 </div>
@@ -193,26 +214,26 @@ export default function TaskDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* MODALS */}
+      
+      {/* MODALS SECTION (Oldingidek qoldi) */}
       {showNoPerm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowNoPerm(false)}>
-           <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>
-              <ShieldAlert className="text-amber-500 mx-auto mb-4" size={40} />
-              <h3 className="text-lg font-bold dark:text-white mb-2">Ваколат етарли эмас</h3>
-              <p className="text-sm text-slate-500 mb-6 leading-relaxed">Кечирасиз, сизнинг фойдаланувчи ҳуқуқларингиз ушбу амални бажариш учун етарли эмас.</p>
-              <button onClick={() => setShowNoPerm(false)} className="btn-primary w-full py-3 font-bold uppercase">Тушунарли</button>
-           </div>
+          <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <ShieldAlert className="text-amber-500 mx-auto mb-4" size={40} />
+            <h3 className="text-lg font-bold dark:text-white mb-2">Ваколат етарли эмас</h3>
+            <p className="text-sm text-slate-500 mb-6 leading-relaxed">Кечирасиз, сизнинг фойдаланувчи ҳуқуқларингиз ушбу амални бажариш учун етарli emas.</p>
+            <button onClick={() => setShowNoPerm(false)} className="btn-primary w-full py-3 font-bold uppercase">Тушунарли</button>
+          </div>
         </div>
       )}
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>
-             <Trash2 className="text-red-500 mx-auto mb-4" size={40} />
-             <h3 className="text-lg font-bold dark:text-white mb-2">Вазифани ўчириш?</h3>
-             <p className="text-sm text-slate-500 mb-8 italic">Танланган вазифа бутунлай ўчирилади.</p>
-             <div className="flex gap-3"><button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary flex-1 py-3">Йўқ</button><button onClick={confirmDelete} className="btn-danger flex-1 py-3 font-bold">Ҳа, ўчириш</button></div>
+            <Trash2 className="text-red-500 mx-auto mb-4" size={40} />
+            <h3 className="text-lg font-bold dark:text-white mb-2">Вазифани ўчириш?</h3>
+            <p className="text-sm text-slate-500 mb-8 italic">Танланган вазифа бутунлай ўчирилади.</p>
+            <div className="flex gap-3"><button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary flex-1 py-3">Йўқ</button><button onClick={confirmDelete} className="btn-danger flex-1 py-3 font-bold">Ҳа, ўчириш</button></div>
           </div>
         </div>
       )}

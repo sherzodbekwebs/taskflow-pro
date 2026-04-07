@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react'; // useRef va useEffect qo'shildi
 import { useApp } from '../../contexts/AppContext';
-import { Calendar, Paperclip, MessageSquare, Flag, Edit, Send, Trash2, ShieldAlert } from 'lucide-react';
+import { 
+  Calendar, Paperclip, MessageSquare, Flag, Edit, Send, Trash2, 
+  ShieldAlert, MoreVertical, Check, X // Yangi ikonlar qo'shildi
+} from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,22 +22,36 @@ function PermissionDeniedModal({ onClose }) {
 }
 
 export default function TaskCard({ task, onEdit, onDelete, isDragging = false }) {
-  const { users, t, addComment, currentUser, isSuperAdmin, hasAccess } = useApp();
+  // approveTask va rejectTask AppContext'dan olindi
+  const { users, t, addComment, currentUser, isSuperAdmin, hasAccess, approveTask, rejectTask } = useApp();
   const navigate = useNavigate();
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showNoPerm, setShowNoPerm] = useState(false);
   
+  // Uch nuqta menyusi uchun state va ref
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  // Menyudan tashqariga bosilganda yopish
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const user = users.find(u => u.id === task.assignedUser);
   const deadline = task.deadline ? new Date(task.deadline) : null;
   const isOverdue = deadline && isPast(deadline) && task.status !== 'done';
 
-  // PROGRESS HISOBI (totalCount xatosi tuzatildi)
   const doneSubs = task.subtasks?.filter(s => s.done).length || 0;
   const totalSubs = task.subtasks?.length || 0;
   const progress = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
 
-  // RUXSAT TEKSHIRUVI
   const canModify = isSuperAdmin || hasAccess || task.assignedUser === currentUser?.id;
 
   const handleAction = (e, callback) => {
@@ -53,7 +70,14 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging = false })
     setCommentText('');
   };
 
-  const STATUS_CLASS = { new: 'badge-new', progress: 'badge-progress', done: 'badge-done' };
+  // review statusi uchun badge qo'shildi
+  const STATUS_CLASS = { 
+    new: 'badge-new', 
+    progress: 'badge-progress', 
+    review: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase',
+    done: 'badge-done' 
+  };
+  
   const PRIORITY_COLOR = {
     high: 'text-red-500 bg-red-50 dark:bg-red-900/20',
     medium: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20',
@@ -69,8 +93,37 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging = false })
         `}
         onClick={() => navigate(`/tasks/${task.id}`)}
       >
-        {/* TUGMALAR DOIM KO'RINADI VA Z-INDEX PASTROQ (sidebar ostida qolishi uchun) */}
         <div className="absolute top-4 right-4 flex gap-1.5 z-10">
+          
+          {/* YANGI: UCH NUQTA MENYU (Faqat Review va Admin uchun) */}
+          {task.status === 'review' && hasAccess && (
+            <div className="relative" ref={menuRef}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 hover:bg-indigo-500 hover:text-white transition-all shadow-sm border border-indigo-100 dark:border-indigo-800"
+              >
+                <MoreVertical size={14} />
+              </button>
+
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-[100] py-1 animate-in fade-in zoom-in duration-200 overflow-hidden">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); approveTask(task.id); setShowMenu(false); }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
+                  >
+                    <Check size={14} /> Qabul qilish
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); rejectTask(task.id); setShowMenu(false); }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                  >
+                    <X size={14} /> Rad etish
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <button 
             onClick={(e) => handleAction(e, onEdit)}
             className="p-2 rounded-xl bg-slate-50 dark:bg-slate-700 text-primary-500 hover:bg-primary-500 hover:text-white transition-all shadow-sm border border-slate-100 dark:border-slate-600"
@@ -89,7 +142,9 @@ export default function TaskCard({ task, onEdit, onDelete, isDragging = false })
         <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-3 line-clamp-2 leading-snug pr-20 group-hover:text-primary-600 transition-colors">{task.title}</h3>
 
         <div className="flex items-center gap-2 flex-wrap mb-4">
-          <span className={STATUS_CLASS[task.status] || 'badge-new'}>{t[{ new: 'statusNew', progress: 'statusProgress', done: 'statusDone' }[task.status]] || task.status}</span>
+          <span className={STATUS_CLASS[task.status] || 'badge-new'}>
+            {task.status === 'review' ? 'Текширувда' : (t[{ new: 'statusNew', progress: 'statusProgress', done: 'statusDone' }[task.status]] || task.status)}
+          </span>
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase ${PRIORITY_COLOR[task.priority]}`}>
             <Flag size={10} /> {t[{ low: 'priorityLow', medium: 'priorityMedium', high: 'priorityHigh' }[task.priority]]}
           </span>

@@ -41,8 +41,6 @@ export function AppProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const sid = window.sessionStorage.getItem('taskflow_session');
-
     const init = async () => {
       try {
         setIsAuthLoading(true);
@@ -50,6 +48,7 @@ export function AppProvider({ children }) {
         const sd = StorageService.get('taskflow_dark') || false;
         setLanguage(sl); setDarkMode(sd); if (sd) document.documentElement.classList.add('dark');
 
+        const sid = window.sessionStorage.getItem('taskflow_session');
         if (sid) {
           const all = await UserService.getAll();
           const u = all.find(x => x.id === sid);
@@ -59,32 +58,10 @@ export function AppProvider({ children }) {
       } finally { setIsAuthLoading(false); }
     };
     init();
-
-    const ch = supabase.channel('db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (p) => {
-        const { eventType, new: newRecord, old: oldRecord } = p;
-        if (eventType === 'INSERT') {
-          setTasks(prev => {
-            if (prev.some(t => t.id === newRecord.id)) return prev;
-            return [newRecord, ...prev];
-          });
-        }
-        else if (eventType === 'UPDATE') {
-          setTasks(prev => prev.map(t => t.id === newRecord.id ? { ...t, ...newRecord } : t));
-        }
-        else if (eventType === 'DELETE') {
-          setTasks(prev => prev.filter(t => t.id !== oldRecord.id));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-        refreshData();
-      })
-      .subscribe();
-
-    return () => supabase.removeChannel(ch);
+    // Real-time (supabase.channel) olib tashlandi
   }, [refreshData]);
 
-  const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod' || currentUser?.username === 'Badriddin';
+  const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod';
   const hasAccess = isSuperAdmin || currentUser?.has_admin_access === true;
 
   const notifyAll = (title, msg, type, icon) => {
@@ -93,105 +70,170 @@ export function AppProvider({ children }) {
   };
 
   const addTask = async (taskData) => {
-    const tempId = `temp-${Date.now()}`;
-    const optimisticTask = {
-      ...taskData,
-      id: tempId,
-      created_at: taskData.created_at || new Date().toISOString(),
-      subtasks: taskData.subtasks || [],
-      comments: []
-    };
-    setTasks(prev => [optimisticTask, ...prev]);
-    showToast("Вазифа яратилди");
+    setIsActionLoading(true); // Loading boshlandi
     try {
       const real = await TaskService.add(taskData);
-      setTasks(prev => prev.map(t => t.id === tempId ? real : t));
+      await refreshData(); // Bazadan yangi ma'lumotni olish
+
       const assigned = users.find(u => u.id === taskData.assignedUser);
       if (assigned) TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
       notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
-    } catch (err) { setTasks(prev => prev.filter(t => t.id !== tempId)); }
+
+      showToast("Вазифа яратилди"); // Faqat muvaffaqiyatli bo'lganda chiqadi
+    } catch (err) {
+      console.error(err);
+      showToast("Xato yuz berdi");
+    } finally {
+      setIsActionLoading(false); // Loading tugadi
+    }
   };
 
   const updateTask = async (id, updates) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-    showToast("Ўзгаришлар сақланди");
-    try { await TaskService.update(id, updates); } catch (err) { console.error(err); refreshData(); }
-  };
-
-  // --- MOVETASK: Tuzatildi (Ishchi 'done'ga o'tkazolmaydi) ---
-  const moveTask = async (tid, ns) => {
-    let targetStatus = ns;
-
-    // Agar foydalanuvchi admin bo'lmasa va vazifani 'done'ga sursa, uni 'review'ga qaytaramiz
-    if (targetStatus === 'done' && !hasAccess) {
-      targetStatus = 'review';
-      showToast("Вазифа текширувга юборилди");
-    }
-
-    const isDone = targetStatus === 'done';
-    const updates = {
-      status: targetStatus,
-      completed: isDone,
-      updated_at: new Date().toISOString()
-    };
-
-    setTasks(prev => prev.map(t => t.id === tid ? { ...t, ...updates } : t));
-
+    setIsActionLoading(true);
     try {
-      await TaskService.update(tid, updates);
-      const updatedTask = tasks.find(t => t.id === tid);
-      const assigned = users.find(u => u.id === updatedTask?.assignedUser);
-      if (assigned) TelegramService.sendNotification({ ...updatedTask, ...updates }, assigned, 'update').catch(console.error);
-    } catch (err) { console.error(err); refreshData(); }
+      await TaskService.update(id, updates);
+      await refreshData();
+      showToast("Ўзгаришлар сақланди");
+    } catch (err) {
+      console.error(err);
+      showToast("Xato yuz berdi");
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
+const moveTask = async (tid, ns) => {
+    setIsActionLoading(true);
+    try {
+      let targetStatus = ns;
+      
+      // Admin bo'lmaganlar uchun 'done'ni 'review'ga aylantirish
+      if (targetStatus === 'done' && !hasAccess) {
+        targetStatus = 'review';
+      }
+
+      // 'updated_at' qatori olib tashlandi, chunki bazada bunday ustun yo'q
+      const updates = { 
+          status: targetStatus, 
+          completed: targetStatus === 'done'
+      };
+
+      // 1. Bazada yangilash
+      const updatedRecord = await TaskService.update(tid, updates);
+      
+      if (!updatedRecord) {
+        throw new Error("Вазифа топилмади");
+      }
+
+      // 2. UI-ni yangilash
+      await refreshData();
+
+      // 3. Xabarni ko'rsatish
+      if (targetStatus === 'review') {
+        showToast("Вазифа текширувга юборилди");
+      } else {
+        showToast("Ўзгаришлар сақланди");
+      }
+
+      // 4. Telegram xabarnomasi (ixtiyoriy)
+      try {
+        const assigned = users.find(u => u.id === updatedRecord.assignedUser);
+        if (assigned) {
+          await TelegramService.sendNotification(updatedRecord, assigned, 'update');
+        }
+      } catch (teleErr) {
+        console.error("Telegram error:", teleErr);
+      }
+
+    } catch (err) { 
+      console.error("MoveTask xatosi:", err); 
+      showToast("Xato: " + err.message);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
   const deleteTask = async (id) => {
-    const old = [...tasks];
     const target = tasks.find(t => t.id === id);
-    setTasks(prev => prev.filter(t => t.id !== id));
-    showToast("Вазифа тизимдан ўчирилди");
+    setIsActionLoading(true);
     try {
       if (target?.files?.length > 0) TaskService.deleteStorageFiles(target.files.map(f => f.url));
       await TaskService.delete(id);
+      await refreshData();
       notifyAll("Вазифа ўчирилди", `"${target?.title}" олиб ташланди`, 'task_deleted', 'trash');
-    } catch (err) { setTasks(old); }
+      showToast("Вазифа тизимdan ўчирилди");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
-  // --- TOGGLESUBTASK: Tuzatildi (100% bo'lsa 'review'ga o'tadi) ---
   const toggleSubtask = async (tid, sid) => {
-    setTasks(prev => prev.map(t => {
-      if (t.id === tid) {
-        const ns = (t.subtasks || []).map(s => s.id === sid ? { ...s, done: !s.done } : s);
-        const allDone = ns.length > 0 && ns.every(x => x.done);
+    setIsActionLoading(true);
+    try {
+      // 1. Subtaskni o'zgartirish
+      await TaskService.toggleSubtask(tid, sid);
 
-        // Hamma sub-tasklar bajarilganda status avtomatik 'review' bo'ladi
-        const newStatus = allDone ? 'review' : 'progress';
+      // 2. Yangi ma'lumotni olib statusni tekshirish
+      const allTasks = await TaskService.getAll();
+      const task = allTasks.find(t => t.id === tid);
 
-        return { ...t, subtasks: ns, status: newStatus, completed: false };
+      if (task && task.subtasks) {
+        const allDone = task.subtasks.length > 0 && task.subtasks.every(s => s.done);
+        // Agar hamma subtasklar bajarilgan bo'lsa va status hali 'review' yoki 'done' bo'lmasa
+        if (allDone && task.status !== 'review' && task.status !== 'done') {
+          await TaskService.update(tid, { status: 'review' });
+        }
       }
-      return t;
-    }));
-    try { await TaskService.toggleSubtask(tid, sid); } catch (err) { refreshData(); }
+
+      await refreshData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const approveTask = async (tid) => {
-    setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: 'done', completed: true } : t));
-    showToast("Вазифа тасдиқланди");
-    try { await TaskService.update(tid, { status: 'done', completed: true }); } catch (err) { refreshData(); }
+    setIsActionLoading(true);
+    try {
+      await TaskService.update(tid, { status: 'done', completed: true });
+      await refreshData();
+      showToast("Вазифа тасдиқланди");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const rejectTask = async (tid) => {
-    setTasks(prev => prev.map(t => t.id === tid ? { ...t, status: 'progress', completed: false } : t));
-    showToast("Вазифа рад этилди");
-    try { await TaskService.update(tid, { status: 'progress', completed: false }); } catch (err) { refreshData(); }
+    setIsActionLoading(true);
+    try {
+      await TaskService.update(tid, { status: 'progress', completed: false });
+      await refreshData();
+      showToast("Вазифа рад этилди");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const addComment = async (tid, txt) => {
     const target = tasks.find(t => t.id === tid);
     const nc = { id: Date.now(), text: txt, userName: currentUser?.fullName, createdAt: new Date().toISOString() };
     const uc = [...(target.comments || []), nc];
-    setTasks(prev => prev.map(t => t.id === tid ? { ...t, comments: uc } : t));
-    try { await TaskService.update(tid, { comments: uc }); showToast("Изоҳ қўшилди"); } catch (err) { console.error(err); }
+    setIsActionLoading(true);
+    try {
+      await TaskService.update(tid, { comments: uc });
+      await refreshData();
+      showToast("Изоҳ қўшилди");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const login = async (u, p) => {

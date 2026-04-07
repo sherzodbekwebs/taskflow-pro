@@ -4,14 +4,19 @@ import TaskService from '../../services/taskService';
 import { X, Plus, Trash2, FileText, AlignLeft, Building2, RefreshCw, CalendarDays, Calendar } from 'lucide-react';
 
 export default function TaskModal({ task, onClose }) {
-  const { addTask, updateTask, users, departments, t } = useApp();
+  // currentUser context'dan olindi
+  const { addTask, updateTask, users, departments, t, currentUser } = useApp();
   const fileInputRef = useRef();
   const isEdit = !!(task && task.id);
   const [isUploading, setIsUploading] = useState(false);
 
   const [form, setForm] = useState({
-    title: '', description: '', status: 'new',
-    assignedUser: '', department: '', deadline: '',
+    title: '', description: '', 
+    status: task?.status || 'new', // Kanban'dan kelsa statusni oladi
+    // Yangi vazifa bo'lsa currentUser ma'lumotlarini default qilib qo'yamiz
+    assignedUser: task?.assignedUser || (isEdit ? '' : currentUser?.id) || '',
+    department: task?.department || (isEdit ? '' : currentUser?.department) || '',
+    deadline: '',
     created_at: new Date().toISOString().split('T')[0],
     subtasks: [], files: [],
     is_recurring: false,
@@ -29,8 +34,9 @@ export default function TaskModal({ task, onClose }) {
         title: task.title || '',
         description: task.description || '',
         status: task.status || 'new',
-        assignedUser: task.assignedUser || '',
-        department: task.department || '',
+        // Agar tahrirlash bo'lsa task'dagini, yangi bo'lsa currentUser'nikini qo'yadi
+        assignedUser: task.assignedUser || (task.id ? '' : currentUser?.id) || '',
+        department: task.department || (task.id ? '' : currentUser?.department) || '',
         deadline: task.deadline ? new Date(task.deadline).toISOString().split('T')[0] : '',
         created_at: task.created_at ? new Date(task.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         subtasks: task.subtasks || [],
@@ -41,7 +47,7 @@ export default function TaskModal({ task, onClose }) {
         recurring_value_end: rEnd
       });
     }
-  }, [task?.id]); // Faqat ID o'zgarganda yuklanadi, bu yozayotganda o'chib ketishni oldini oladi
+  }, [task?.id]); 
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -59,11 +65,10 @@ export default function TaskModal({ task, onClose }) {
     } catch (err) { alert("Xatolik: " + err.message); } finally { setIsUploading(false); }
   };
 
-const handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.title.trim() || isUploading) return;
 
-    // 1. Takrorlanish qiymatini shakllantirish
     let rValue = parseInt(form.recurring_value) || 1;
     if (form.is_recurring && ['monthly', 'quarterly', 'yearly'].includes(form.recurring_type)) {
       rValue = {
@@ -72,7 +77,6 @@ const handleSubmit = (e) => {
       };
     }
 
-    // 2. FAQAT bazada bor ustunlarni ajratib olamiz (Bu xatolikni oldini oladi)
     const data = {
       title: form.title.trim(),
       description: form.description || null,
@@ -88,7 +92,6 @@ const handleSubmit = (e) => {
       created_at: form.created_at ? new Date(form.created_at).toISOString() : new Date().toISOString()
     };
 
-    // 3. Saqlash
     if (isEdit) {
       updateTask(task.id, data);
     } else {
@@ -96,6 +99,7 @@ const handleSubmit = (e) => {
     }
     onClose(true);
   };
+
   return ( 
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 rounded-[0.7rem] w-full max-w-6xl max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800 shadow-none overflow-hidden">
@@ -187,7 +191,6 @@ const handleSubmit = (e) => {
                 <div className="space-y-1"><label className="text-[9px] font-bold text-slate-400 uppercase">{t.deadline}</label><input type="date" className="input h-9 text-[11px] font-bold rounded-lg w-full" value={form.deadline} onChange={e => set('deadline', e.target.value)} /></div>
               </div>
 
-              {/* SUBTASKS (Siz so'ragan qism mana shu yerda) */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between px-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.subtasks}</label>

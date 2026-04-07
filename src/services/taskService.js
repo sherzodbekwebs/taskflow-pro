@@ -80,16 +80,32 @@ const TaskService = {
     return true;
   },
 
+  // SHU YERDA O'ZGARIŞ QILINDI:
   toggleSubtask: async (taskId, subtaskId) => {
-    const { data: task } = await supabase.from('tasks').select('subtasks').eq('id', taskId).single();
+    const { data: task } = await supabase.from('tasks').select('subtasks, status').eq('id', taskId).single();
     if (!task) return null;
+    
     const newSubtasks = task.subtasks.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s);
     const allDone = newSubtasks.length > 0 && newSubtasks.every(s => s.done);
-    return await TaskService.update(taskId, { 
+    
+    // Yangi mantiq: 
+    // 1. Agar hamma subtask bitgan bo'lsa -> status 'review' bo'ladi.
+    // 2. Agar bittasi ochilsa (not done) -> status 'progress'ga qaytadi.
+    // 3. 'completed' faqat admin tasdiqlagandagina (approve) true bo'lishi kerak, shuning uchun bu yerda false yoki statusga qarab o'zgaradi.
+    
+    const updates = { 
         subtasks: newSubtasks, 
-        completed: allDone,
-        status: allDone ? 'done' : 'progress'
-    });
+        completed: false, // Review holatida hali bitgan emas
+        status: allDone ? 'review' : 'progress'
+    };
+
+    // Agar vazifa allaqachon 'done' bo'lsa va biron subtaskni 'not done' qilsak:
+    if (!allDone && task.status === 'done') {
+      updates.status = 'progress';
+      updates.completed = false;
+    }
+
+    return await TaskService.update(taskId, updates);
   },
 
   getStats: async () => {

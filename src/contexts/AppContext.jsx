@@ -34,7 +34,7 @@ export function AppProvider({ children }) {
         UserService.getDepartments()
       ]);
       setTasks(allTasks); setUsers(allUsers); setDepartments(allDeps);
-      
+
       const sid = window.sessionStorage.getItem('taskflow_session');
       if (sid) { const n = await NotificationService.getByUser(sid); setNotifications(n); }
     } catch (err) { console.error(err); }
@@ -49,7 +49,7 @@ export function AppProvider({ children }) {
         const sl = StorageService.get('taskflow_lang') || 'uz';
         const sd = StorageService.get('taskflow_dark') || false;
         setLanguage(sl); setDarkMode(sd); if (sd) document.documentElement.classList.add('dark');
-        
+
         if (sid) {
           const all = await UserService.getAll();
           const u = all.find(x => x.id === sid);
@@ -77,14 +77,14 @@ export function AppProvider({ children }) {
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-         refreshData();
+        refreshData();
       })
       .subscribe();
 
     return () => supabase.removeChannel(ch);
   }, [refreshData]);
 
-  const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod';
+  const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod' || currentUser?.username === 'Badriddin';
   const hasAccess = isSuperAdmin || currentUser?.has_admin_access === true;
 
   const notifyAll = (title, msg, type, icon) => {
@@ -94,12 +94,12 @@ export function AppProvider({ children }) {
 
   const addTask = async (taskData) => {
     const tempId = `temp-${Date.now()}`;
-    const optimisticTask = { 
-      ...taskData, 
-      id: tempId, 
-      created_at: taskData.created_at || new Date().toISOString(), 
-      subtasks: taskData.subtasks || [], 
-      comments: [] 
+    const optimisticTask = {
+      ...taskData,
+      id: tempId,
+      created_at: taskData.created_at || new Date().toISOString(),
+      subtasks: taskData.subtasks || [],
+      comments: []
     };
     setTasks(prev => [optimisticTask, ...prev]);
     showToast("Вазифа яратилди");
@@ -121,7 +121,7 @@ export function AppProvider({ children }) {
   // --- MOVETASK: Tuzatildi (Ishchi 'done'ga o'tkazolmaydi) ---
   const moveTask = async (tid, ns) => {
     let targetStatus = ns;
-    
+
     // Agar foydalanuvchi admin bo'lmasa va vazifani 'done'ga sursa, uni 'review'ga qaytaramiz
     if (targetStatus === 'done' && !hasAccess) {
       targetStatus = 'review';
@@ -129,10 +129,10 @@ export function AppProvider({ children }) {
     }
 
     const isDone = targetStatus === 'done';
-    const updates = { 
-        status: targetStatus, 
-        completed: isDone,
-        updated_at: new Date().toISOString()
+    const updates = {
+      status: targetStatus,
+      completed: isDone,
+      updated_at: new Date().toISOString()
     };
 
     setTasks(prev => prev.map(t => t.id === tid ? { ...t, ...updates } : t));
@@ -163,10 +163,10 @@ export function AppProvider({ children }) {
       if (t.id === tid) {
         const ns = (t.subtasks || []).map(s => s.id === sid ? { ...s, done: !s.done } : s);
         const allDone = ns.length > 0 && ns.every(x => x.done);
-        
+
         // Hamma sub-tasklar bajarilganda status avtomatik 'review' bo'ladi
         const newStatus = allDone ? 'review' : 'progress';
-        
+
         return { ...t, subtasks: ns, status: newStatus, completed: false };
       }
       return t;
@@ -198,10 +198,10 @@ export function AppProvider({ children }) {
     setIsActionLoading(true);
     try {
       const res = await UserService.getByCredentials(u, p);
-      if (res) { 
-        setCurrentUser(res); 
-        window.sessionStorage.setItem('taskflow_session', res.id); 
-        await refreshData(); 
+      if (res) {
+        setCurrentUser(res);
+        window.sessionStorage.setItem('taskflow_session', res.id);
+        await refreshData();
       }
       return res;
     } finally { setIsActionLoading(false); }
@@ -212,10 +212,10 @@ export function AppProvider({ children }) {
       currentUser, isAuthLoading, isActionLoading, isSuperAdmin, hasAccess, toast,
       tasks, users, departments, notifications, unreadCount: notifications.filter(n => !n.read).length,
       language, darkMode, t,
-      login, 
-      logout: () => { 
-        setCurrentUser(null); 
-        window.sessionStorage.removeItem('taskflow_session'); 
+      login,
+      logout: () => {
+        setCurrentUser(null);
+        window.sessionStorage.removeItem('taskflow_session');
       },
       addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask,
       addUser: async (d) => { setIsActionLoading(true); try { await UserService.add(d); await refreshData(); } finally { setIsActionLoading(false); } },

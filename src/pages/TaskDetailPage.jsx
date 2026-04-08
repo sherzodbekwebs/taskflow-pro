@@ -13,7 +13,6 @@ export default function TaskDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // SHU YERGA moveTask VA isActionLoading QO'SHILDI:
   const { 
     tasks, users, toggleSubtask, currentUser, isSuperAdmin, 
     hasAccess, deleteTask, approveTask, rejectTask, 
@@ -30,6 +29,34 @@ export default function TaskDetailPage() {
   const [iframeKey, setIframeKey] = useState(0);
 
   if (!task) return null;
+
+  // --- MUDDATNI ANIQLASH LOGIKASI ---
+  const getDeadlineDisplay = () => {
+    if (task.is_recurring) {
+      const type = task.recurring_type;
+      const val = task.recurring_value;
+      
+      if (type === 'daily') return "Ҳар куни";
+      if (type === 'weekly') return "Ҳар ҳафта";
+      
+      // Agar start-end ko'rinishidagi ob'ekt bo'lsa
+      if (typeof val === 'object' && val !== null) {
+        const label = type === 'monthly' ? 'Ҳар ой' : type === 'quarterly' ? 'Ҳар чорак' : 'Ҳар йил';
+        return `${label} (${val.start}-${val.end} саналарда)`;
+      }
+      
+      // Agar bitta raqam bo'lsa
+      if (val) {
+        const label = type === 'monthly' ? 'Ҳар ой' : type === 'quarterly' ? 'Ҳар чорак' : 'Ҳар йил';
+        return `${label} (${val}-сана)`;
+      }
+
+      return "Такрорланувчи";
+    }
+    
+    // Agar oddiy vazifa bo'lsa
+    return task.deadline ? format(new Date(task.deadline), 'dd MMM, yyyy', { locale: uz }) : '—';
+  };
 
   const assignedUser = users.find(u => u.id === task.assignedUser);
   const doneCount = task.subtasks?.filter(s => s.done).length || 0;
@@ -81,7 +108,6 @@ export default function TaskDetailPage() {
             </button>
 
             <div className="flex gap-2 w-full sm:w-auto items-center">
-              {/* ADMIN APPROVE/REJECT BUTTONS */}
               {task.status === 'review' && isAdminOnly && (
                 <div className="flex gap-2 flex-1 sm:flex-none mr-4">
                   <button onClick={handleReject} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-amber-600">
@@ -93,7 +119,6 @@ export default function TaskDetailPage() {
                 </div>
               )}
 
-              {/* FINISH TASK BUTTON (Tepada) */}
               {task.status !== 'review' && task.status !== 'done' && (
                 <button
                   onClick={() => moveTask(task.id, 'review')}
@@ -134,7 +159,12 @@ export default function TaskDetailPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                   <div className="flex items-center gap-2 text-xs font-bold"><User size={14} className="text-primary-500" /><span className="text-slate-400 uppercase text-[10px]">Ижрочи:</span><span className="dark:text-white">{assignedUser?.fullName || assignedUser?.fullname || '—'}</span></div>
-                  <div className="flex items-center gap-2 text-xs font-bold"><Calendar size={14} className="text-amber-500" /><span className="text-slate-400 uppercase text-[10px]">Муддат:</span><span className="dark:text-white">{task.deadline ? format(new Date(task.deadline), 'dd MMM, yyyy', { locale: uz }) : '—'}</span></div>
+                  {/* BU YERDA getDeadlineDisplay ISHLATILDI */}
+                  <div className="flex items-center gap-2 text-xs font-bold">
+                    <Calendar size={14} className="text-amber-500" />
+                    <span className="text-slate-400 uppercase text-[10px]">Муддат:</span>
+                    <span className="dark:text-white">{getDeadlineDisplay()}</span>
+                  </div>
                 </div>
               </div>
 
@@ -198,7 +228,6 @@ export default function TaskDetailPage() {
                   </div>
                   <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest px-4">Босқичлар белгиланмаган</p>
                   
-                  {/* FINISH TASK BUTTON (Pastda - subtask bo'lmasa chiqadi) */}
                   {task.status !== 'review' && task.status !== 'done' && (
                     <button
                       onClick={() => moveTask(task.id, 'review')}
@@ -215,7 +244,7 @@ export default function TaskDetailPage() {
         </div>
       </div>
       
-      {/* MODALS SECTION (Oldingidek qoldi) */}
+      {/* MODALS SECTION */}
       {showNoPerm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowNoPerm(false)}>
           <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>

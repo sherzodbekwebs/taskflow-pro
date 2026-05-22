@@ -64,13 +64,27 @@ export default function TasksPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
 
+  // --- МАНА ШУ ЕРДА ТАРТИБЛАШ ВА ФИЛТРЛАШ ТЎҒИРЛАНДИ ---
   const filtered = useMemo(() => {
-    return tasks.filter(task => {
-      if (search && !task.title?.toLowerCase().includes(search.toLowerCase())) return false;
-      if (filterStatus !== 'all' && task.status !== filterStatus) return false;
-      if (filterUser !== 'all' && task.assignedUser !== filterUser) return false;
-      return true;
-    });
+    return [...tasks]
+      .filter(task => {
+        // 1. Қидирув
+        if (search && !task.title?.toLowerCase().includes(search.toLowerCase())) return false;
+        
+        // 2. Ҳолат бўйича филтр
+        if (filterStatus !== 'all' && task.status !== filterStatus) return false;
+        
+        // 3. Ижрочи бўйича филтр (ID-ни String қилиб солиштириш шарт!)
+        if (filterUser !== 'all' && String(task.assignedUser) !== String(filterUser)) return false;
+        
+        return true;
+      })
+      .sort((a, b) => {
+        // Энг янгисини тепага чиқариш: аввал вақт бўйича, агар вақт бўлмаса ID бўйича
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : (isNaN(a.id) ? 0 : Number(a.id));
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : (isNaN(b.id) ? 0 : Number(b.id));
+        return timeB - timeA;
+      });
   }, [tasks, search, filterStatus, filterUser]);
 
   const handleAddTask = (status = 'new') => {
@@ -194,76 +208,69 @@ export default function TasksPage() {
                     <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right print:text-black">Муддат</th>
                   </tr>
                 </thead>
-            <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-  {filtered.map((task, index) => {
-    const assigned = users.find(u => u.id === task.assignedUser);
-    return (
-      <tr key={task.id} 
-        onClick={() => setEditTask(task) || setShowModal(true)}
-        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors group print:break-inside-avoid"
-      >
-        <td className="px-4 py-4 text-center text-xs font-bold text-slate-400 print:text-black">
-          {index + 1}
-        </td>
-        <td className="px-6 py-4">
-          <div className="flex items-center gap-4">
-            {/* 1. STATUS CHIZIG'I: Qalinroq (w-2) va balandroq (h-10) qilindi */}
-            <div className={`w-2 h-10 rounded-full shrink-0 ${getStatusColor(task.status)} print:hidden shadow-sm`} />
-            
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary-500 transition-colors print:text-black leading-tight">
-                {task.title}
-              </span>
-              
-              {/* 2. STATUS BADGE: Rang nimaligini yozuvda tushuntiradi */}
-              <div className="flex items-center gap-2">
-                <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter text-white ${getStatusColor(task.status)}`}>
-                  {statusLabels[task.status]}
-                </span>
-                {task.department && (
-                   <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
-                     • {task.department}
-                   </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </td>
-
-        <td className="px-6 py-4">
-          <div className="flex items-center gap-2">
-             <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 print:hidden">
-               {(assigned?.fullName || assigned?.fullname || "?")[0]}
-             </div>
-             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 print:text-black">
-               {assigned?.fullName || assigned?.fullname || "—"}
-             </span>
-          </div>
-        </td>
-
-        <td className="px-6 py-4">
-          <div className="flex flex-col">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 print:text-black">
-              {task.created_at ? format(new Date(task.created_at), 'dd.MM.yyyy') : "—"}
-            </span>
-            <span className="text-[10px] text-slate-400">
-              {task.created_at ? format(new Date(task.created_at), 'HH:mm') : ""}
-            </span>
-          </div>
-        </td>
-
-        <td className="px-6 py-4 text-right">
-           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 print:border-none print:bg-transparent">
-              {task.is_recurring ? <RefreshCw size={14} className="text-primary-500 print:hidden" /> : <CalendarIcon size={14} className="text-slate-400 print:hidden" />}
-              <span className={`text-[11px] font-bold ${task.is_recurring ? 'text-primary-600' : 'text-slate-500'} print:text-black print:text-[10pt]`}>
-                {getDeadlineDisplay(task)}
-              </span>
-           </div>
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
+                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                  {filtered.map((task, index) => {
+                    const assigned = users.find(u => String(u.id) === String(task.assignedUser));
+                    return (
+                      <tr key={task.id}
+                        onClick={() => { setEditTask(task); setShowModal(true); }}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors group print:break-inside-avoid"
+                      >
+                        <td className="px-4 py-4 text-center text-xs font-bold text-slate-400 print:text-black">
+                          {index + 1}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-2 h-10 rounded-full shrink-0 ${getStatusColor(task.status)} print:hidden shadow-sm`} />
+                            <div className="flex flex-col gap-1">
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary-500 transition-colors print:text-black leading-tight">
+                                {task.title}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter text-white ${getStatusColor(task.status)}`}>
+                                  {statusLabels[task.status]}
+                                </span>
+                                {task.department && (
+                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                                    • {task.department}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 print:hidden">
+                              {(assigned?.fullName || assigned?.fullname || "?")[0]}
+                            </div>
+                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 print:text-black">
+                              {assigned?.fullName || assigned?.fullname || "—"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 print:text-black">
+                              {task.created_at ? format(new Date(task.created_at), 'dd.MM.yyyy') : "—"}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {task.created_at ? format(new Date(task.created_at), 'HH:mm') : ""}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 print:border-none print:bg-transparent">
+                            {task.is_recurring ? <RefreshCw size={14} className="text-primary-500 print:hidden" /> : <CalendarIcon size={14} className="text-slate-400 print:hidden" />}
+                            <span className={`text-[11px] font-bold ${task.is_recurring ? 'text-primary-600' : 'text-slate-500'} print:text-black print:text-[10pt]`}>
+                              {getDeadlineDisplay(task)}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
               </table>
             </div>
           )}
@@ -276,11 +283,17 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {showModal && <TaskModal task={editTask ? tasks.find(t => t.id === editTask.id) : { status: defaultStatus }} onClose={() => { setShowModal(false); setEditTask(null); }} />}
+      {showModal && (
+        <TaskModal 
+          task={editTask ? tasks.find(t => String(t.id) === String(editTask.id)) : { status: defaultStatus }} 
+          onClose={() => { setShowModal(false); setEditTask(null); }} 
+        />
+      )}
+
       {taskToDelete && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-fade-in print:hidden">
           <div className="bg-white dark:bg-slate-800 rounded-[1rem] p-8 max-w-sm w-full shadow-2xl text-center border border-slate-100">
-            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-red-100"><AlertTriangle size={32} /></div>
+            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-100"><AlertTriangle size={32} /></div>
             <h3 className="text-xl font-bold dark:text-white mb-2">{t.confirmDeletion}</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 italic">"{taskToDelete.title}" вазифасини ўчирасизми?</p>
             <div className="flex gap-3">

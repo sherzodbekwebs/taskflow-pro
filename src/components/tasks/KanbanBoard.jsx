@@ -14,61 +14,33 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-start w-full min-w-[1200px] lg:min-w-0">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-start w-full">
       {Object.entries(columns).map(([status, info]) => {
         
-        // --- ЎЗГАРТИРИШ ШУ ЕРДА ---
-        // 1. Аввал статус бўйича филтрлаймиз
-        // 2. Кейин вақт бўйича саралаймиз (энг янгиси тепада)
+        // --- МАНА ШУ ЕРДА ТАРТИБЛАШ БЎЛИШИ ШАРТ ---
         const columnTasks = tasks
           .filter(t => t.status === status)
           .sort((a, b) => {
-            const timeA = new Date(a.created_at || a.id).getTime();
-            const timeB = new Date(b.created_at || b.id).getTime();
-            return timeB - timeA;
+            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+            return dateB - dateA; // Янгиси тепага
           });
-        // -------------------------
 
         return (
-          <div 
-            key={status} 
-            className="flex flex-col min-h-[500px] w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden shadow-none"
-          >
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
+          <div key={status} className="flex flex-col min-h-[500px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
               <div className="flex items-center gap-2">
                 <div className={`w-2.5 h-2.5 rounded-full ${info.color}`} />
-                <h3 className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                  {info.title}
-                </h3>
-                <span className="text-[10px] font-bold bg-white dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                  {columnTasks.length}
-                </span>
+                <h3 className="text-[11px] font-black uppercase text-slate-500">{info.title}</h3>
+                <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded border">{columnTasks.length}</span>
               </div>
-              <button 
-                onClick={() => onAddTask(status)} 
-                className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-400 transition-all border border-transparent hover:border-slate-200"
-              >
-                <Plus size={16} />
-              </button>
+              <button onClick={() => onAddTask(status)} className="text-slate-400 hover:text-primary-500"><Plus size={16} /></button>
             </div>
 
             <div className="p-3 space-y-3 flex-1">
               {columnTasks.map((task) => (
-                <div key={task.id}>
-                  <TaskCard 
-                    task={task} 
-                    onEdit={onEditTask} 
-                    onDelete={onDeleteTask} 
-                    isDragging={false}
-                  />
-                </div>
+                <TaskCard key={task.id} task={task} onEdit={onEditTask} onDelete={onDeleteTask} />
               ))}
-              
-              {columnTasks.length === 0 && (
-                <div className="flex-1 flex items-center justify-center py-20 opacity-20">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em]">Бўш</p>
-                </div>
-              )}
             </div>
           </div>
         );

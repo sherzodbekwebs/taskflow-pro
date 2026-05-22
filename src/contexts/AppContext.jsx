@@ -28,8 +28,6 @@ export function AppProvider({ children }) {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Ma'lumotlarni serverdan qayta yuklash
-  // 1. Маълумотларни сервердан олиш ва саралаш
   const refreshData = useCallback(async () => {
     try {
       const [allTasks, allUsers, allDeps] = await Promise.all([
@@ -38,11 +36,12 @@ export function AppProvider({ children }) {
         UserService.getDepartments()
       ]);
 
-      // Саралаш: Энг янги вазифа (ID ёки вақт бўйича) тепада туради
+      // Saralash: Eng oxirgi o'zgargan yoki yaratilgan vazifa tepaga chiqadi
       const sortedTasks = [...allTasks].sort((a, b) => {
-        const timeA = a.created_at ? new Date(a.created_at).getTime() : Number(a.id);
-        const timeB = b.created_at ? new Date(b.created_at).getTime() : Number(b.id);
-        return timeB - timeA;
+        // updated_at bo'lsa shuni olamiz, bo'lmasa created_at, u ham bo'lmasa ID
+        const timeA = new Date(a.updated_at || a.created_at || a.id).getTime();
+        const timeB = new Date(b.updated_at || b.created_at || b.id).getTime();
+        return timeB - timeA; // Kattasi (yangisi) tepaga
       });
 
       setTasks(sortedTasks);
@@ -236,13 +235,30 @@ export function AppProvider({ children }) {
     setIsActionLoading(true);
     try {
       let targetStatus = ns;
+      // Admin bo'lmasa, 'done' qilishdan oldin 'review'ga yuborish
       if (targetStatus === 'done' && !hasAccess) targetStatus = 'review';
-      const updates = { status: targetStatus, completed: targetStatus === 'done' };
+
+      const updates = {
+        status: targetStatus,
+        completed: targetStatus === 'done',
+        // MUXIM: Vazifa o'zgargan vaqtini ham yuboramiz
+        updated_at: new Date().toISOString()
+      };
+
+      // 1. Serverda yangilash
       const updatedRecord = await TaskService.update(tid, updates);
+
+      // 2. Ma'lumotlarni qayta yuklash 
+      // (Oldingi javobimda refreshData ichidagi sort'ni updated_at bo'yicha to'g'rilagan edik)
       await refreshData();
+
       showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланди");
+
+      // Telegram bildirishnoma
       const assigned = users.find(u => String(u.id) === String(updatedRecord.assignedUser));
-      if (assigned) TelegramService.sendNotification(updatedRecord, assigned, 'update');
+      if (assigned) {
+        TelegramService.sendNotification(updatedRecord, assigned, 'update').catch(e => console.error("TG error:", e));
+      }
     } catch (err) {
       console.error("MoveTask xatosi:", err);
       showToast("Xato yuz berdi");
@@ -281,27 +297,30 @@ export function AppProvider({ children }) {
   const approveTask = async (tid) => {
     setIsActionLoading(true);
     try {
-      await TaskService.update(tid, { status: 'done', completed: true });
+      // Shunchaki status emas, vaqtni ham yangilang
+      await TaskService.update(tid, {
+        status: 'done',
+        completed: true,
+        updated_at: new Date().toISOString() // SHUNI QO'SHING
+      });
       await refreshData();
       showToast("Вазифа тасдиқланди");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsActionLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setIsActionLoading(false); }
   };
 
   const rejectTask = async (tid) => {
     setIsActionLoading(true);
     try {
-      await TaskService.update(tid, { status: 'progress', completed: false });
+      await TaskService.update(tid, {
+        status: 'progress',
+        completed: false,
+        updated_at: new Date().toISOString() // SHUNI QO'SHING
+      });
       await refreshData();
-      showToast("Вазифа рад этилди");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsActionLoading(false);
-    }
+      showToast("Вазифа рад etildi");
+    } catch (err) { console.error(err); }
+    finally { setIsActionLoading(false); }
   };
 
   const addComment = async (tid, txt) => {

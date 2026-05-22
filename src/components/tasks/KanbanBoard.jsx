@@ -16,14 +16,15 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-start w-full">
       {Object.entries(columns).map(([status, info]) => {
-        
+
         // --- МАНА ШУ ЕРДА ТАРТИБЛАШ БЎЛИШИ ШАРТ ---
         const columnTasks = tasks
           .filter(t => t.status === status)
           .sort((a, b) => {
-            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-            return dateB - dateA; // Янгиси тепага
+            // Bu yerda ham updated_at bo'yicha saralaymiz
+            const dateA = new Date(a.updated_at || a.created_at || 0).getTime();
+            const dateB = new Date(b.updated_at || b.created_at || 0).getTime();
+            return dateB - dateA;
           });
 
         return (

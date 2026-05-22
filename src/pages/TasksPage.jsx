@@ -64,25 +64,19 @@ export default function TasksPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
 
-  // --- МАНА ШУ ЕРДА ТАРТИБЛАШ ВА ФИЛТРЛАШ ТЎҒИРЛАНДИ ---
+  // TasksPage.js ichidagi filtered logic
   const filtered = useMemo(() => {
     return [...tasks]
       .filter(task => {
-        // 1. Қидирув
         if (search && !task.title?.toLowerCase().includes(search.toLowerCase())) return false;
-        
-        // 2. Ҳолат бўйича филтр
         if (filterStatus !== 'all' && task.status !== filterStatus) return false;
-        
-        // 3. Ижрочи бўйича филтр (ID-ни String қилиб солиштириш шарт!)
         if (filterUser !== 'all' && String(task.assignedUser) !== String(filterUser)) return false;
-        
         return true;
       })
       .sort((a, b) => {
-        // Энг янгисини тепага чиқариш: аввал вақт бўйича, агар вақт бўлмаса ID бўйича
-        const timeA = a.created_at ? new Date(a.created_at).getTime() : (isNaN(a.id) ? 0 : Number(a.id));
-        const timeB = b.created_at ? new Date(b.created_at).getTime() : (isNaN(b.id) ? 0 : Number(b.id));
+        // Eng oxirgi yangilangan vazifa doim tepada turishi uchun:
+        const timeA = new Date(a.updated_at || a.created_at || a.id).getTime();
+        const timeB = new Date(b.updated_at || b.created_at || b.id).getTime();
         return timeB - timeA;
       });
   }, [tasks, search, filterStatus, filterUser]);
@@ -284,9 +278,9 @@ export default function TasksPage() {
       </div>
 
       {showModal && (
-        <TaskModal 
-          task={editTask ? tasks.find(t => String(t.id) === String(editTask.id)) : { status: defaultStatus }} 
-          onClose={() => { setShowModal(false); setEditTask(null); }} 
+        <TaskModal
+          task={editTask ? tasks.find(t => String(t.id) === String(editTask.id)) : { status: defaultStatus }}
+          onClose={() => { setShowModal(false); setEditTask(null); }}
         />
       )}
 

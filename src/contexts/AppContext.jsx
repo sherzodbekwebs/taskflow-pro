@@ -29,6 +29,7 @@ export function AppProvider({ children }) {
   };
 
   // Ma'lumotlarni serverdan qayta yuklash
+  // 1. Маълумотларни сервердан олиш ва саралаш
   const refreshData = useCallback(async () => {
     try {
       const [allTasks, allUsers, allDeps] = await Promise.all([
@@ -37,9 +38,8 @@ export function AppProvider({ children }) {
         UserService.getDepartments()
       ]);
 
-      // Янги массив яратиб, вақт бўйича аниқ саралаймиз
+      // Саралаш: Энг янги вазифа (ID ёки вақт бўйича) тепада туради
       const sortedTasks = [...allTasks].sort((a, b) => {
-        // Агар created_at бўлмаса, ID бўйича солиштиради
         const timeA = a.created_at ? new Date(a.created_at).getTime() : Number(a.id);
         const timeB = b.created_at ? new Date(b.created_at).getTime() : Number(b.id);
         return timeB - timeA;
@@ -48,9 +48,43 @@ export function AppProvider({ children }) {
       setTasks(sortedTasks);
       setUsers(allUsers);
       setDepartments(allDeps);
-      // ... қолганлари ўзгармайди
-    } catch (err) { console.error(err); }
+
+      const sid = window.sessionStorage.getItem('taskflow_session');
+      if (sid && sid !== 'undefined') {
+        const n = await NotificationService.getByUser(Number(sid));
+        setNotifications(n);
+      }
+    } catch (err) { console.error("Refresh error:", err); }
   }, []);
+
+  // 2. Янги вазифа қўшиш
+  const addTask = async (taskData) => {
+    setIsActionLoading(true);
+    try {
+      const realTask = await TaskService.add(taskData);
+
+      // ОПТИМИСТИК: Сервердан жавоб келиши билан уни рўйхат БОШИГА қўшамиз
+      setTasks(prevTasks => [realTask, ...prevTasks]);
+
+      // Кейин база билан тўлиқ синхронлаймиз
+      await refreshData();
+
+      const assigned = users.find(u => String(u.id) === String(taskData.assignedUser));
+
+      // Билдиришномаларни хавфсиз юбориш (500 хатосини олдини олиш учун)
+      try {
+        if (assigned) await TelegramService.sendNotification(realTask, assigned, 'create');
+        notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
+      } catch (e) { console.error("Notification error:", e); }
+
+      showToast("Вазифа яратилди");
+    } catch (err) {
+      console.error("Vazifa qo'shishda xato:", err);
+      showToast("Хатолик юз берди");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
 
   // Ilova ishga tushgandagi sozlamalar
   useEffect(() => {

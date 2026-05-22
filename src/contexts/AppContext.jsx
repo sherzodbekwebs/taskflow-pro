@@ -36,7 +36,15 @@ export function AppProvider({ children }) {
         UserService.getAll(),
         UserService.getDepartments()
       ]);
-      setTasks(allTasks); 
+
+      // --- TARTIBLASH (SORTING) QISMI ---
+      // Vazifalarni eng yangisi birinchi bo'lib chiqishi uchun tartiblaymiz
+      const sortedTasks = allTasks.sort((a, b) => {
+        // created_at yoki id bo'yicha teskari tartiblash
+        return new Date(b.created_at || b.id) - new Date(a.created_at || a.id);
+      });
+      
+      setTasks(sortedTasks); 
       setUsers(allUsers); 
       setDepartments(allDeps);
 
@@ -56,10 +64,10 @@ export function AppProvider({ children }) {
       try {
         setIsAuthLoading(true);
         const sl = StorageService.get('taskflow_lang') || 'uz';
-        const sd = StorageService.get('taskflow_dark') || false;
+        const signDark = StorageService.get('taskflow_dark') || false;
         setLanguage(sl); 
-        setDarkMode(sd); 
-        if (sd) document.documentElement.classList.add('dark');
+        setDarkMode(signDark); 
+        if (signDark) document.documentElement.classList.add('dark');
 
         const sid = window.sessionStorage.getItem('taskflow_session');
         if (sid && sid !== 'undefined') {
@@ -80,14 +88,12 @@ export function AppProvider({ children }) {
   const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod';
   const hasAccess = isSuperAdmin || currentUser?.has_admin_access === true;
 
-  // --- FOYDALANUVCHILARNI BOSHQARISH (OPTIMISTIC UPDATE) ---
-
   const addUser = async (data) => {
     setIsActionLoading(true);
     try {
       const newUser = await UserService.add(data);
       const mappedUser = { ...newUser, fullName: newUser.fullname };
-      setUsers(prev => [...prev, mappedUser]); // Listni darhol yangilash
+      setUsers(prev => [...prev, mappedUser]);
       showToast("Xodim tizimga qo'shildi");
     } catch (err) {
       console.error(err);
@@ -102,15 +108,10 @@ export function AppProvider({ children }) {
     try {
       const updated = await UserService.update(id, data);
       const mappedUser = { ...updated, fullName: updated.fullname };
-      
-      // Listni darhol yangilash
       setUsers(prev => prev.map(u => String(u.id) === String(id) ? mappedUser : u));
-      
-      // Agar o'z profilini o'zgartirgan bo'lsa, uni ham yangilash
       if (String(currentUser?.id) === String(id)) {
         setCurrentUser(mappedUser);
       }
-      
       showToast("Ma'lumotlar saqlandi");
     } catch (err) {
       console.error(err);
@@ -125,7 +126,7 @@ export function AppProvider({ children }) {
     setIsActionLoading(true);
     try {
       await UserService.delete(id);
-      setUsers(prev => prev.filter(u => String(u.id) !== String(id))); // Listdan o'chirish
+      setUsers(prev => prev.filter(u => String(u.id) !== String(id)));
       showToast("Foydalanuvchi o'chirildi");
     } catch (err) {
       console.error(err);
@@ -134,8 +135,6 @@ export function AppProvider({ children }) {
       setIsActionLoading(false);
     }
   };
-
-  // --- BO'LIMLARNI BOSHQARISH ---
 
   const addDepartment = async (name) => {
     setIsActionLoading(true);
@@ -163,8 +162,6 @@ export function AppProvider({ children }) {
     }
   };
 
-  // --- VAZIFALAR BILAN ISHLASH ---
-
   const notifyAll = (title, msg, type, icon) => {
     const ids = users.map(u => u.id);
     NotificationService.add({ title, message: msg, type, icon }, ids).catch(console.error);
@@ -174,7 +171,8 @@ export function AppProvider({ children }) {
     setIsActionLoading(true);
     try {
       const real = await TaskService.add(taskData);
-      await refreshData();
+      await refreshData(); // refreshData endi saralangan ma'lumotni setTasks ga yozadi
+      
       const assigned = users.find(u => String(u.id) === String(taskData.assignedUser));
       if (assigned) TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
       notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
@@ -206,13 +204,10 @@ export function AppProvider({ children }) {
     try {
       let targetStatus = ns;
       if (targetStatus === 'done' && !hasAccess) targetStatus = 'review';
-
       const updates = { status: targetStatus, completed: targetStatus === 'done' };
       const updatedRecord = await TaskService.update(tid, updates);
       await refreshData();
-
-      showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланdi");
-
+      showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланди");
       const assigned = users.find(u => String(u.id) === String(updatedRecord.assignedUser));
       if (assigned) TelegramService.sendNotification(updatedRecord, assigned, 'update');
     } catch (err) { 
@@ -230,7 +225,7 @@ export function AppProvider({ children }) {
       await TaskService.delete(id);
       await refreshData();
       notifyAll("Вазифа ўчирилди", `"${target?.title}" олиб ташланди`, 'task_deleted', 'trash');
-      showToast("Вазифа тизимdan ўчирилди");
+      showToast("Вазифа тизимдан ўчирилди");
     } catch (err) {
       console.error(err);
     } finally {
@@ -268,7 +263,7 @@ export function AppProvider({ children }) {
     try {
       await TaskService.update(tid, { status: 'progress', completed: false });
       await refreshData();
-      showToast("Вазифа рад этилdi");
+      showToast("Вазифа рад этилди");
     } catch (err) {
       console.error(err);
     } finally {

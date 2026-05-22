@@ -23,9 +23,9 @@ export function AppProvider({ children }) {
 
   const t = language === 'uz' ? uz : ru;
 
-  const showToast = (msg) => { 
-    setToast(msg); 
-    setTimeout(() => setToast(null), 3000); 
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
   };
 
   // Ma'lumotlarni serverdan qayta yuklash
@@ -37,25 +37,19 @@ export function AppProvider({ children }) {
         UserService.getDepartments()
       ]);
 
-      // --- TARTIBLASH (SORTING) QISMI ---
-      // Vazifalarni eng yangisi birinchi bo'lib chiqishi uchun tartiblaymiz
-      const sortedTasks = allTasks.sort((a, b) => {
-        // created_at yoki id bo'yicha teskari tartiblash
-        return new Date(b.created_at || b.id) - new Date(a.created_at || a.id);
+      // Янги массив яратиб, вақт бўйича аниқ саралаймиз
+      const sortedTasks = [...allTasks].sort((a, b) => {
+        // Агар created_at бўлмаса, ID бўйича солиштиради
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : Number(a.id);
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : Number(b.id);
+        return timeB - timeA;
       });
-      
-      setTasks(sortedTasks); 
-      setUsers(allUsers); 
-      setDepartments(allDeps);
 
-      const sid = window.sessionStorage.getItem('taskflow_session');
-      if (sid && sid !== 'undefined') { 
-        const n = await NotificationService.getByUser(Number(sid)); 
-        setNotifications(n); 
-      }
-    } catch (err) { 
-      console.error("RefreshData error:", err); 
-    }
+      setTasks(sortedTasks);
+      setUsers(allUsers);
+      setDepartments(allDeps);
+      // ... қолганлари ўзгармайди
+    } catch (err) { console.error(err); }
   }, []);
 
   // Ilova ishga tushgandagi sozlamalar
@@ -65,8 +59,8 @@ export function AppProvider({ children }) {
         setIsAuthLoading(true);
         const sl = StorageService.get('taskflow_lang') || 'uz';
         const signDark = StorageService.get('taskflow_dark') || false;
-        setLanguage(sl); 
-        setDarkMode(signDark); 
+        setLanguage(sl);
+        setDarkMode(signDark);
         if (signDark) document.documentElement.classList.add('dark');
 
         const sid = window.sessionStorage.getItem('taskflow_session');
@@ -78,8 +72,8 @@ export function AppProvider({ children }) {
         await refreshData();
       } catch (err) {
         console.error("Init error:", err);
-      } finally { 
-        setIsAuthLoading(false); 
+      } finally {
+        setIsAuthLoading(false);
       }
     };
     init();
@@ -170,11 +164,16 @@ export function AppProvider({ children }) {
   const addTask = async (taskData) => {
     setIsActionLoading(true);
     try {
-      const real = await TaskService.add(taskData);
-      await refreshData(); // refreshData endi saralangan ma'lumotni setTasks ga yozadi
-      
+      const realTask = await TaskService.add(taskData);
+
+      // МАНА ШУ ҚАТОРНИ ҚЎШИНГ (Оптимистик янгилаш)
+      // Янги келган вазифани массивнинг ЭНГ БОШИГА қўшамиз
+      setTasks(prevTasks => [realTask, ...prevTasks]);
+
+      await refreshData(); // Кейин сервер билан синхронлаймиз
+
       const assigned = users.find(u => String(u.id) === String(taskData.assignedUser));
-      if (assigned) TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
+      if (assigned) TelegramService.sendNotification(realTask, assigned, 'create').catch(console.error);
       notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
       showToast("Вазифа яратилди");
     } catch (err) {
@@ -210,8 +209,8 @@ export function AppProvider({ children }) {
       showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланди");
       const assigned = users.find(u => String(u.id) === String(updatedRecord.assignedUser));
       if (assigned) TelegramService.sendNotification(updatedRecord, assigned, 'update');
-    } catch (err) { 
-      console.error("MoveTask xatosi:", err); 
+    } catch (err) {
+      console.error("MoveTask xatosi:", err);
       showToast("Xato yuz berdi");
     } finally {
       setIsActionLoading(false);
@@ -299,10 +298,10 @@ export function AppProvider({ children }) {
       }
       return res;
     } catch (err) {
-        showToast("Username yoki parol xato");
-        return null;
-    } finally { 
-        setIsActionLoading(false); 
+      showToast("Username yoki parol xato");
+      return null;
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
@@ -319,21 +318,21 @@ export function AppProvider({ children }) {
       login, logout, refreshData,
       addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask,
       addUser, updateUser, deleteUser, addDepartment, deleteDepartment,
-      markNotifRead: (id) => { 
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); 
-        NotificationService.markRead(currentUser.id, id); 
+      markNotifRead: (id) => {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        NotificationService.markRead(currentUser.id, id);
       },
-      markAllNotifRead: () => { 
-        setNotifications(prev => prev.map(n => ({ ...n, read: true }))); 
-        NotificationService.markAllRead(currentUser.id); 
+      markAllNotifRead: () => {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        NotificationService.markAllRead(currentUser.id);
       },
       changeLanguage: (l) => { setLanguage(l); StorageService.set('taskflow_lang', l); },
-      toggleDarkMode: () => { 
-        const m = !darkMode; 
-        setDarkMode(m); 
-        StorageService.set('taskflow_dark', m); 
-        if (m) document.documentElement.classList.add('dark'); 
-        else document.documentElement.classList.remove('dark'); 
+      toggleDarkMode: () => {
+        const m = !darkMode;
+        setDarkMode(m);
+        StorageService.set('taskflow_dark', m);
+        if (m) document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
       },
     }}>
       {children}

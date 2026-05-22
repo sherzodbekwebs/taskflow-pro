@@ -4,7 +4,6 @@ import { Plus } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask }) {
-  // context'dan hasAccess olindi
   const { hasAccess } = useApp();
 
   const columns = {
@@ -17,7 +16,18 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-start w-full min-w-[1200px] lg:min-w-0">
       {Object.entries(columns).map(([status, info]) => {
-        const columnTasks = tasks.filter(t => t.status === status);
+        
+        // --- ЎЗГАРТИРИШ ШУ ЕРДА ---
+        // 1. Аввал статус бўйича филтрлаймиз
+        // 2. Кейин вақт бўйича саралаймиз (энг янгиси тепада)
+        const columnTasks = tasks
+          .filter(t => t.status === status)
+          .sort((a, b) => {
+            const timeA = new Date(a.created_at || a.id).getTime();
+            const timeB = new Date(b.created_at || b.id).getTime();
+            return timeB - timeA;
+          });
+        // -------------------------
 
         return (
           <div 

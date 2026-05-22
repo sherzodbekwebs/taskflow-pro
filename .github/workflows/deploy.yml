@@ -3,34 +3,36 @@ name: Deploy Frontend to cPanel
 on:
   push:
     branches:
-      - main  # Агар branch номи 'master' бўлса, шуни ёзинг
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🚚 Кодни олиш
-        uses: actions/checkout@v3
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
 
-      - name: 🛠 Node.js ўрнатиш
-        uses: actions/setup-node@v3
+      - name: 🛠 Install Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
-      - name: 📦 Кутубхоналарни ўрнатиш ва Build қилиш
+      - name: 📦 Install dependencies & Build
         run: |
           npm install
           npm run build
         env:
           VITE_API_URL: https://api.taskflow.uzautotrailer.uz
 
-      - name: 🚀 FTP орқали cPanel'га юбориш
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: 🚀 Sync files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: ./
-          protocol: ftp
+          port: 21
+          # Agar hali ham ENOTFOUND chiqsa, loglarni ko'rish uchun:
+          log-level: verbose

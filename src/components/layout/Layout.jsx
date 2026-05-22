@@ -8,9 +8,9 @@ import {
 } from 'lucide-react';
 
 export default function Layout() {
-  const { 
-    currentUser, logout, t, darkMode, toggleDarkMode, 
-    language, changeLanguage, unreadCount, isActionLoading, toast 
+  const {
+    currentUser, logout, t, darkMode, toggleDarkMode,
+    language, changeLanguage, unreadCount, isActionLoading, toast
   } = useApp();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,15 +27,15 @@ export default function Layout() {
   }, []);
 
   const formatDateTime = () => {
-    // Sanani formatlash: 22-May, Juma
-    const dateStr = time.toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU', {
-      day: 'numeric',
-      month: 'short',
-      weekday: 'long',
+    // Sana formati: 22.05.2026
+    const dateStr = time.toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
-    
-    // Vaqtni formatlash: 10:05:45
-    const timeStr = time.toLocaleTimeString(language === 'uz' ? 'uz-UZ' : 'ru-RU', {
+
+    // Vaqt formati: 10:21:19
+    const timeStr = time.toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -65,10 +65,9 @@ export default function Layout() {
       end={exact}
       onClick={() => setSidebarOpen(false)}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${
-          isActive
-            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20'
-            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
+        `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium ${isActive
+          ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20'
+          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white'
         }`
       }
     >
@@ -81,7 +80,7 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
-      
+
       {/* 1. SUCCESS TOAST NOTIFICATION */}
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top-4 duration-300">

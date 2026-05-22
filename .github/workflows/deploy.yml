@@ -1,0 +1,36 @@
+name: Deploy Frontend to cPanel
+
+on:
+  push:
+    branches:
+      - main  # Агар branch номи 'master' бўлса, шуни ёзинг
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Кодни олиш
+        uses: actions/checkout@v3
+
+      - name: 🛠 Node.js ўрнатиш
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 📦 Кутубхоналарни ўрнатиш ва Build қилиш
+        run: |
+          npm install
+          npm run build
+        env:
+          VITE_API_URL: https://api.taskflow.uzautotrailer.uz
+
+      - name: 🚀 FTP орқали cPanel'га юбориш
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ./
+          protocol: ftp

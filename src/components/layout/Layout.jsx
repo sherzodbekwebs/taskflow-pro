@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // useEffect qo'shildi
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useApp } from '../../contexts/AppContext';
 import NotificationPanel from '../notifications/NotificationPanel';
 import {
   LayoutDashboard, CheckSquare, Users, BarChart3, Settings,
-  Bell, LogOut, Menu, X, Sun, Moon, Globe, Loader2, CheckCircle2
+  Bell, LogOut, Menu, X, Sun, Moon, Globe, Loader2, CheckCircle2, Clock
 } from 'lucide-react';
 
 export default function Layout() {
@@ -15,6 +15,36 @@ export default function Layout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+
+  // --- SOAT VA SANA LOGIKASI ---
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatDateTime = () => {
+    // Sanani formatlash: 22-May, Juma
+    const dateStr = time.toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU', {
+      day: 'numeric',
+      month: 'short',
+      weekday: 'long',
+    });
+    
+    // Vaqtni formatlash: 10:05:45
+    const timeStr = time.toLocaleTimeString(language === 'uz' ? 'uz-UZ' : 'ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+
+    return `${dateStr} | ${timeStr}`;
+  };
+  // -----------------------------
 
   const handleLogout = () => {
     logout();
@@ -52,7 +82,7 @@ export default function Layout() {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden relative">
       
-      {/* 1. SUCCESS TOAST NOTIFICATION (ENG TEPADA) */}
+      {/* 1. SUCCESS TOAST NOTIFICATION */}
       {toast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top-4 duration-300">
           <div className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/10 dark:border-slate-200">
@@ -80,7 +110,7 @@ export default function Layout() {
         />
       )}
 
-      {/* Sidebar - z-index ko'tarildi */}
+      {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-50
         w-64 flex flex-col bg-white dark:bg-slate-800 border-r border-slate-100 dark:border-slate-700
@@ -131,6 +161,15 @@ export default function Layout() {
           >
             <Menu size={20} />
           </button>
+
+          {/* --- YANGI QO'SHILGAN SOAT QISMI --- */}
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm animate-fade-in">
+            <Clock size={14} className="text-primary-500 animate-pulse" />
+            <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest tabular-nums">
+              {formatDateTime()}
+            </span>
+          </div>
+          {/* ---------------------------------- */}
 
           <div className="flex items-center gap-2 ml-auto">
             <button onClick={() => changeLanguage(language === 'uz' ? 'ru' : 'uz')} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">

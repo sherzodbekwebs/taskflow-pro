@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
 import TaskService from '../services/taskService';
 import UserService from '../services/userService';
 import NotificationService from '../services/notificationService';
@@ -24,8 +23,12 @@ export function AppProvider({ children }) {
 
   const t = language === 'uz' ? uz : ru;
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
+  const showToast = (msg) => { 
+    setToast(msg); 
+    setTimeout(() => setToast(null), 3000); 
+  };
 
+  // Ma'lumotlarni serverdan qayta yuklash
   const refreshData = useCallback(async () => {
     try {
       const [allTasks, allUsers, allDeps] = await Promise.all([
@@ -33,36 +36,134 @@ export function AppProvider({ children }) {
         UserService.getAll(),
         UserService.getDepartments()
       ]);
-      setTasks(allTasks); setUsers(allUsers); setDepartments(allDeps);
+      setTasks(allTasks); 
+      setUsers(allUsers); 
+      setDepartments(allDeps);
 
       const sid = window.sessionStorage.getItem('taskflow_session');
-      if (sid) { const n = await NotificationService.getByUser(sid); setNotifications(n); }
-    } catch (err) { console.error(err); }
+      if (sid && sid !== 'undefined') { 
+        const n = await NotificationService.getByUser(Number(sid)); 
+        setNotifications(n); 
+      }
+    } catch (err) { 
+      console.error("RefreshData error:", err); 
+    }
   }, []);
 
+  // Ilova ishga tushgandagi sozlamalar
   useEffect(() => {
     const init = async () => {
       try {
         setIsAuthLoading(true);
         const sl = StorageService.get('taskflow_lang') || 'uz';
         const sd = StorageService.get('taskflow_dark') || false;
-        setLanguage(sl); setDarkMode(sd); if (sd) document.documentElement.classList.add('dark');
+        setLanguage(sl); 
+        setDarkMode(sd); 
+        if (sd) document.documentElement.classList.add('dark');
 
         const sid = window.sessionStorage.getItem('taskflow_session');
-        if (sid) {
+        if (sid && sid !== 'undefined') {
           const all = await UserService.getAll();
-          const u = all.find(x => x.id === sid);
+          const u = all.find(x => String(x.id) === String(sid));
           if (u) setCurrentUser(u);
         }
         await refreshData();
-      } finally { setIsAuthLoading(false); }
+      } catch (err) {
+        console.error("Init error:", err);
+      } finally { 
+        setIsAuthLoading(false); 
+      }
     };
     init();
-    // Real-time (supabase.channel) olib tashlandi
   }, [refreshData]);
 
   const isSuperAdmin = currentUser?.username === 'admin' || currentUser?.username === 'sherzod';
   const hasAccess = isSuperAdmin || currentUser?.has_admin_access === true;
+
+  // --- FOYDALANUVCHILARNI BOSHQARISH (OPTIMISTIC UPDATE) ---
+
+  const addUser = async (data) => {
+    setIsActionLoading(true);
+    try {
+      const newUser = await UserService.add(data);
+      const mappedUser = { ...newUser, fullName: newUser.fullname };
+      setUsers(prev => [...prev, mappedUser]); // Listni darhol yangilash
+      showToast("Xodim tizimga qo'shildi");
+    } catch (err) {
+      console.error(err);
+      showToast("Xato yuz berdi");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const updateUser = async (id, data) => {
+    setIsActionLoading(true);
+    try {
+      const updated = await UserService.update(id, data);
+      const mappedUser = { ...updated, fullName: updated.fullname };
+      
+      // Listni darhol yangilash
+      setUsers(prev => prev.map(u => String(u.id) === String(id) ? mappedUser : u));
+      
+      // Agar o'z profilini o'zgartirgan bo'lsa, uni ham yangilash
+      if (String(currentUser?.id) === String(id)) {
+        setCurrentUser(mappedUser);
+      }
+      
+      showToast("Ma'lumotlar saqlandi");
+    } catch (err) {
+      console.error(err);
+      showToast("Xato yuz berdi");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const deleteUser = async (id) => {
+    if (String(id) === String(currentUser?.id)) return;
+    setIsActionLoading(true);
+    try {
+      await UserService.delete(id);
+      setUsers(prev => prev.filter(u => String(u.id) !== String(id))); // Listdan o'chirish
+      showToast("Foydalanuvchi o'chirildi");
+    } catch (err) {
+      console.error(err);
+      showToast("Xato yuz berdi");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // --- BO'LIMLARNI BOSHQARISH ---
+
+  const addDepartment = async (name) => {
+    setIsActionLoading(true);
+    try {
+      await UserService.addDepartment(name);
+      setDepartments(prev => [...prev, name]);
+      showToast("Bo'lim qo'shildi");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const deleteDepartment = async (name) => {
+    setIsActionLoading(true);
+    try {
+      await UserService.deleteDepartment(name);
+      setDepartments(prev => prev.filter(d => d !== name));
+      showToast("Bo'lim o'chirildi");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  // --- VAZIFALAR BILAN ISHLASH ---
 
   const notifyAll = (title, msg, type, icon) => {
     const ids = users.map(u => u.id);
@@ -70,21 +171,19 @@ export function AppProvider({ children }) {
   };
 
   const addTask = async (taskData) => {
-    setIsActionLoading(true); // Loading boshlandi
+    setIsActionLoading(true);
     try {
       const real = await TaskService.add(taskData);
-      await refreshData(); // Bazadan yangi ma'lumotni olish
-
-      const assigned = users.find(u => u.id === taskData.assignedUser);
+      await refreshData();
+      const assigned = users.find(u => String(u.id) === String(taskData.assignedUser));
       if (assigned) TelegramService.sendNotification(real, assigned, 'create').catch(console.error);
       notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
-
-      showToast("Вазифа яратилди"); // Faqat muvaffaqiyatli bo'lganda chiqadi
+      showToast("Вазифа яратилди");
     } catch (err) {
       console.error(err);
       showToast("Xato yuz berdi");
     } finally {
-      setIsActionLoading(false); // Loading tugadi
+      setIsActionLoading(false);
     }
   };
 
@@ -102,61 +201,32 @@ export function AppProvider({ children }) {
     }
   };
 
-const moveTask = async (tid, ns) => {
+  const moveTask = async (tid, ns) => {
     setIsActionLoading(true);
     try {
       let targetStatus = ns;
-      
-      // Admin bo'lmaganlar uchun 'done'ni 'review'ga aylantirish
-      if (targetStatus === 'done' && !hasAccess) {
-        targetStatus = 'review';
-      }
+      if (targetStatus === 'done' && !hasAccess) targetStatus = 'review';
 
-      // 'updated_at' qatori olib tashlandi, chunki bazada bunday ustun yo'q
-      const updates = { 
-          status: targetStatus, 
-          completed: targetStatus === 'done'
-      };
-
-      // 1. Bazada yangilash
+      const updates = { status: targetStatus, completed: targetStatus === 'done' };
       const updatedRecord = await TaskService.update(tid, updates);
-      
-      if (!updatedRecord) {
-        throw new Error("Вазифа топилмади");
-      }
-
-      // 2. UI-ni yangilash
       await refreshData();
 
-      // 3. Xabarni ko'rsatish
-      if (targetStatus === 'review') {
-        showToast("Вазифа текширувга юборилди");
-      } else {
-        showToast("Ўзгаришлар сақланди");
-      }
+      showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланdi");
 
-      // 4. Telegram xabarnomasi (ixtiyoriy)
-      try {
-        const assigned = users.find(u => u.id === updatedRecord.assignedUser);
-        if (assigned) {
-          await TelegramService.sendNotification(updatedRecord, assigned, 'update');
-        }
-      } catch (teleErr) {
-        console.error("Telegram error:", teleErr);
-      }
-
+      const assigned = users.find(u => String(u.id) === String(updatedRecord.assignedUser));
+      if (assigned) TelegramService.sendNotification(updatedRecord, assigned, 'update');
     } catch (err) { 
       console.error("MoveTask xatosi:", err); 
-      showToast("Xato: " + err.message);
+      showToast("Xato yuz berdi");
     } finally {
       setIsActionLoading(false);
     }
   };
+
   const deleteTask = async (id) => {
-    const target = tasks.find(t => t.id === id);
+    const target = tasks.find(t => String(t.id) === String(id));
     setIsActionLoading(true);
     try {
-      if (target?.files?.length > 0) TaskService.deleteStorageFiles(target.files.map(f => f.url));
       await TaskService.delete(id);
       await refreshData();
       notifyAll("Вазифа ўчирилди", `"${target?.title}" олиб ташланди`, 'task_deleted', 'trash');
@@ -171,21 +241,7 @@ const moveTask = async (tid, ns) => {
   const toggleSubtask = async (tid, sid) => {
     setIsActionLoading(true);
     try {
-      // 1. Subtaskni o'zgartirish
       await TaskService.toggleSubtask(tid, sid);
-
-      // 2. Yangi ma'lumotni olib statusni tekshirish
-      const allTasks = await TaskService.getAll();
-      const task = allTasks.find(t => t.id === tid);
-
-      if (task && task.subtasks) {
-        const allDone = task.subtasks.length > 0 && task.subtasks.every(s => s.done);
-        // Agar hamma subtasklar bajarilgan bo'lsa va status hali 'review' yoki 'done' bo'lmasa
-        if (allDone && task.status !== 'review' && task.status !== 'done') {
-          await TaskService.update(tid, { status: 'review' });
-        }
-      }
-
       await refreshData();
     } catch (err) {
       console.error(err);
@@ -212,7 +268,7 @@ const moveTask = async (tid, ns) => {
     try {
       await TaskService.update(tid, { status: 'progress', completed: false });
       await refreshData();
-      showToast("Вазифа рад этилди");
+      showToast("Вазифа рад этилdi");
     } catch (err) {
       console.error(err);
     } finally {
@@ -221,7 +277,7 @@ const moveTask = async (tid, ns) => {
   };
 
   const addComment = async (tid, txt) => {
-    const target = tasks.find(t => t.id === tid);
+    const target = tasks.find(t => String(t.id) === String(tid));
     const nc = { id: Date.now(), text: txt, userName: currentUser?.fullName, createdAt: new Date().toISOString() };
     const uc = [...(target.comments || []), nc];
     setIsActionLoading(true);
@@ -241,12 +297,23 @@ const moveTask = async (tid, ns) => {
     try {
       const res = await UserService.getByCredentials(u, p);
       if (res) {
-        setCurrentUser(res);
-        window.sessionStorage.setItem('taskflow_session', res.id);
+        const mappedUser = { ...res, fullName: res.fullname };
+        setCurrentUser(mappedUser);
+        window.sessionStorage.setItem('taskflow_session', String(res.id));
         await refreshData();
       }
       return res;
-    } finally { setIsActionLoading(false); }
+    } catch (err) {
+        showToast("Username yoki parol xato");
+        return null;
+    } finally { 
+        setIsActionLoading(false); 
+    }
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    window.sessionStorage.removeItem('taskflow_session');
   };
 
   return (
@@ -254,22 +321,25 @@ const moveTask = async (tid, ns) => {
       currentUser, isAuthLoading, isActionLoading, isSuperAdmin, hasAccess, toast,
       tasks, users, departments, notifications, unreadCount: notifications.filter(n => !n.read).length,
       language, darkMode, t,
-      login,
-      logout: () => {
-        setCurrentUser(null);
-        window.sessionStorage.removeItem('taskflow_session');
-      },
+      login, logout, refreshData,
       addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask,
-      addUser: async (d) => { setIsActionLoading(true); try { await UserService.add(d); await refreshData(); } finally { setIsActionLoading(false); } },
-      updateUser: async (id, data) => { setIsActionLoading(true); try { await UserService.update(id, data); await refreshData(); } finally { setIsActionLoading(false); } },
-      deleteUser: async (id) => { setIsActionLoading(true); try { await UserService.delete(id); await refreshData(); } finally { setIsActionLoading(false); } },
-      addDepartment: async (n) => { setIsActionLoading(true); try { await UserService.addDepartment(n); await refreshData(); } finally { setIsActionLoading(false); } },
-      deleteDepartment: async (n) => { setIsActionLoading(true); try { await UserService.deleteDepartment(n); await refreshData(); } finally { setIsActionLoading(false); } },
-      markNotifRead: (id) => { setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); NotificationService.markRead(currentUser.id, id); },
-      markAllNotifRead: () => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); NotificationService.markAllRead(currentUser.id); },
+      addUser, updateUser, deleteUser, addDepartment, deleteDepartment,
+      markNotifRead: (id) => { 
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); 
+        NotificationService.markRead(currentUser.id, id); 
+      },
+      markAllNotifRead: () => { 
+        setNotifications(prev => prev.map(n => ({ ...n, read: true }))); 
+        NotificationService.markAllRead(currentUser.id); 
+      },
       changeLanguage: (l) => { setLanguage(l); StorageService.set('taskflow_lang', l); },
-      toggleDarkMode: () => { const m = !darkMode; setDarkMode(m); StorageService.set('taskflow_dark', m); if (m) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); },
-      refreshData,
+      toggleDarkMode: () => { 
+        const m = !darkMode; 
+        setDarkMode(m); 
+        StorageService.set('taskflow_dark', m); 
+        if (m) document.documentElement.classList.add('dark'); 
+        else document.documentElement.classList.remove('dark'); 
+      },
     }}>
       {children}
     </AppContext.Provider>

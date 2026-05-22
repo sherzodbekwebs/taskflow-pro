@@ -1,120 +1,103 @@
-import { supabase } from '../supabaseClient';
+import api from '../api';
 
 const TaskService = {
+  // 1. Barcha vazifalarni olish
   getAll: async () => {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
-  },
-
-  uploadFile: async (file) => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}-${Date.now()}.${fileExt}`;
-      const filePath = fileName;
-
-      const { data, error } = await supabase.storage
-        .from('task-files')
-        .upload(filePath, file);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('task-files')
-        .getPublicUrl(filePath);
-
-      return {
-        id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        name: file.name,
-        url: publicUrl,
-        type: file.type,
-        size: file.size
-      };
+      const response = await api.get('/tasks');
+      return response.data || [];
     } catch (error) {
-      console.error("Fayl yuklashda xato:", error.message);
+      console.error("Vazifalarni yuklashda xato:", error);
       throw error;
     }
   },
 
-  deleteStorageFiles: async (fileUrls) => {
+  // 2. Bitta vazifani ID bo'yicha olish (Sahifaga kirganda kerak bo'ladi)
+  getById: async (id) => {
     try {
-      if (!fileUrls || fileUrls.length === 0) return;
-      const filePaths = fileUrls.map(url => url.split('/').pop());
-      const { error } = await supabase.storage
-        .from('task-files')
-        .remove(filePaths);
-      if (error) throw error;
+      const response = await api.get(`/tasks/${id}`);
+      return response.data;
     } catch (error) {
-      console.error("Storage o'chirish xatosi:", error.message);
+      console.error("Vazifani yuklashda xato:", error);
+      throw error;
     }
   },
 
+  // 3. Fayl yuklash (Backend-dagi /tasks/upload endpointiga yuboradi)
+  uploadFile: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post('/tasks/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data; // { id, name, url, type, size } qaytadi
+    } catch (error) {
+      console.error("Fayl yuklashda xato:", error);
+      throw error;
+    }
+  },
+
+  // 4. Yangi vazifa qo'shish
   add: async (task) => {
-    const { id, created_at, ...taskData } = task;
-    if (!taskData.assignedUser || taskData.assignedUser === "" || taskData.assignedUser === "undefined") {
-      taskData.assignedUser = null;
+    try {
+      // assignedUser-ni raqam formatiga o'tkazamiz
+      const payload = {
+        ...task,
+        assignedUser: task.assignedUser ? Number(task.assignedUser) : null
+      };
+      const response = await api.post('/tasks', payload);
+      return response.data;
+    } catch (error) {
+      console.error("Vazifa qo'shishda xato:", error);
+      throw error;
     }
-    const { data, error } = await supabase.from('tasks').insert([taskData]).select();
-    if (error) throw error;
-    return data[0];
   },
 
+  // 5. Vazifani tahrirlash
   update: async (id, updates) => {
-    if (!id || id === 'undefined') return null;
-    const { id: _, created_at: __, ...cleanUpdates } = updates;
-    if (cleanUpdates.assignedUser === "" || cleanUpdates.assignedUser === "undefined") {
-      cleanUpdates.assignedUser = null;
+    try {
+      const response = await api.patch(`/tasks/${id}`, updates);
+      return response.data;
+    } catch (error) {
+      console.error("Vazifani yangilashda xato:", error);
+      throw error;
     }
-    const { data, error } = await supabase.from('tasks').update(cleanUpdates).eq('id', id).select();
-    if (error) throw error;
-    return data[0];
   },
 
+  // 6. Vazifani o'chirish
   delete: async (id) => {
-    const { error } = await supabase.from('tasks').delete().eq('id', id);
-    if (error) throw error;
-    return true;
-  },
-
-  // SHU YERDA O'ZGARIŞ QILINDI:
-  toggleSubtask: async (taskId, subtaskId) => {
-    const { data: task } = await supabase.from('tasks').select('subtasks, status').eq('id', taskId).single();
-    if (!task) return null;
-    
-    const newSubtasks = task.subtasks.map(s => s.id === subtaskId ? { ...s, done: !s.done } : s);
-    const allDone = newSubtasks.length > 0 && newSubtasks.every(s => s.done);
-    
-    // Yangi mantiq: 
-    // 1. Agar hamma subtask bitgan bo'lsa -> status 'review' bo'ladi.
-    // 2. Agar bittasi ochilsa (not done) -> status 'progress'ga qaytadi.
-    // 3. 'completed' faqat admin tasdiqlagandagina (approve) true bo'lishi kerak, shuning uchun bu yerda false yoki statusga qarab o'zgaradi.
-    
-    const updates = { 
-        subtasks: newSubtasks, 
-        completed: false, // Review holatida hali bitgan emas
-        status: allDone ? 'review' : 'progress'
-    };
-
-    // Agar vazifa allaqachon 'done' bo'lsa va biron subtaskni 'not done' qilsak:
-    if (!allDone && task.status === 'done') {
-      updates.status = 'progress';
-      updates.completed = false;
+    try {
+      await api.delete(`/tasks/${id}`);
+      return true;
+    } catch (error) {
+      console.error("Vazifani o'chirishda xato:", error);
+      throw error;
     }
-
-    return await TaskService.update(taskId, updates);
   },
 
+  // 7. Subtask holatini o'zgartirish (Check-box uchun)
+  toggleSubtask: async (taskId, subtaskId) => {
+    try {
+      // URL: /tasks/2/subtask/1/toggle
+      const response = await api.post(`/tasks/${taskId}/subtask/${subtaskId}/toggle`);
+      return response.data;
+    } catch (error) {
+      console.error("Subtaskni o'zgartirishda xato:", error);
+      throw error;
+    }
+  },
+
+  // 8. Statistika ma'lumotlarini olish
   getStats: async () => {
-    const tasks = await TaskService.getAll();
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'done').length;
-    const inProgress = tasks.filter(t => t.status === 'progress').length;
-    const newTasks = tasks.filter(t => t.status === 'new').length;
-    return { total, completed, inProgress, newTasks };
+    try {
+      const response = await api.get('/tasks/stats');
+      return response.data;
+    } catch (error) {
+      console.error("Statistika yuklashda xato:", error);
+      return { total: 0, completed: 0, inProgress: 0, newTasks: 0 };
+    }
   }
 };
 

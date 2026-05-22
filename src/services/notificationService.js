@@ -1,65 +1,22 @@
-import { supabase } from '../supabaseClient';
+import api from '../api';
 
 const NotificationService = {
   add: async (notifData, allUserIds) => {
-    const { data: newNotif, error: notifError } = await supabase
-      .from('notifications')
-      .insert([{
-        title: notifData.title,
-        message: notifData.message,
-        type: notifData.type,
-        icon: notifData.icon
-      }])
-      .select().single();
-
-    if (notifError) throw notifError;
-
-    const relations = allUserIds.map(uid => ({
-      user_id: uid,
-      notification_id: newNotif.id,
-      is_read: false
-    }));
-
-    const { error: relError } = await supabase.from('user_notifications').insert(relations);
-    if (relError) throw relError;
-    return newNotif;
+    const response = await api.post('/notifications', { notifData, allUserIds });
+    return response.data;
   },
 
   getByUser: async (userId) => {
-    const { data, error } = await supabase
-      .from('user_notifications')
-      .select(`
-        is_read,
-        notification_id,
-        notifications (*)
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { foreignTable: 'notifications', ascending: false });
-
-    if (error) throw error;
-    
-    return data.map(item => ({
-      ...item.notifications,
-      read: item.is_read,
-      createdAt: item.notifications.created_at
-    }));
+    const response = await api.get(`/notifications/user/${userId}`);
+    return response.data;
   },
 
   markRead: async (userId, notifId) => {
-    const { error } = await supabase
-      .from('user_notifications')
-      .update({ is_read: true })
-      .eq('user_id', userId)
-      .eq('notification_id', notifId);
-    if (error) throw error;
+    await api.patch(`/notifications/read/${userId}/${notifId}`);
   },
 
   markAllRead: async (userId) => {
-    const { error } = await supabase
-      .from('user_notifications')
-      .update({ is_read: true })
-      .eq('user_id', userId);
-    if (error) throw error;
+    await api.patch(`/notifications/read-all/${userId}`);
   }
 };
 

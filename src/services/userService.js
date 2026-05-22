@@ -1,77 +1,93 @@
-import { supabase } from '../supabaseClient';
+import api from '../api';
 
 const UserService = {
   getAll: async () => {
-    const { data, error } = await supabase.from('users').select('*').order('fullname', { ascending: true });
-    if (error) throw error;
-    return data.map(u => ({
+    const response = await api.get('/users');
+    return response.data.map(u => ({
       ...u,
-      fullName: u.fullname || u.fullName || '', 
+      fullName: u.fullname, // Backend 'fullname' -> Frontend 'fullName'
+      tg_username: u.tg_username || '',
+      bio: u.bio || ''
     }));
   },
 
   getByCredentials: async (username, password) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .eq('password', password);
-    
-    if (error || data.length === 0) return null;
-    const user = data[0];
-    return { ...user, fullName: user.fullname || user.fullName || '' };
+    try {
+      const response = await api.post('/users/login', { username, password });
+      const user = response.data;
+      if (!user) return null;
+      return { 
+        ...user, 
+        fullName: user.fullname,
+        tg_username: user.tg_username || '',
+        bio: user.bio || ''
+      };
+    } catch (e) {
+      return null;
+    }
   },
 
   add: async (user) => {
     const payload = {
       username: user.username,
       password: user.password,
-      fullname: user.fullName || user.fullname, 
+      fullname: user.fullName || user.fullname,
       role: user.role,
       department: user.department || null,
-      has_admin_access: false
+      has_admin_access: false,
+      tg_username: user.tg_username || '',
+      bio: user.bio || ''
     };
 
-    const { data, error } = await supabase.from('users').insert([payload]).select();
-    if (error) throw error;
-    return { ...data[0], fullName: data[0].fullname };
+    const response = await api.post('/users', payload);
+    return { ...response.data, fullName: response.data.fullname };
   },
 
   update: async (id, updates) => {
     const payload = { ...updates };
     
-    if (payload.fullName || payload.fullname) {
-      payload.fullname = payload.fullName || payload.fullname;
+    // 1. Nomlanishni backendga moslaymiz
+    if (payload.fullName) {
+      payload.fullname = payload.fullName;
       delete payload.fullName;
     }
 
-    if (payload.hasOwnProperty('password') && (!payload.password || payload.password.trim() === "")) {
+    // 2. Parol bo'sh bo'lsa yubormaymiz
+    if (payload.password === "" || !payload.password) {
       delete payload.password;
     }
 
-    const { data, error } = await supabase.from('users').update(payload).eq('id', id).select();
-    if (error) throw error;
-    return { ...data[0], fullName: data[0].fullname };
+    // 3. Telegram username-dan @ belgisini olib tashlash (ixtiyoriy, tartib uchun)
+    if (payload.tg_username) {
+      payload.tg_username = payload.tg_username.replace('@', '');
+    }
+
+    const response = await api.patch(`/users/${id}`, payload);
+    
+    return { 
+      ...response.data, 
+      fullName: response.data.fullname,
+      tg_username: response.data.tg_username,
+      bio: response.data.bio
+    };
   },
 
   delete: async (id) => {
-    const { error } = await supabase.from('users').delete().eq('id', id);
-    if (error) throw error;
+    await api.delete(`/users/${id}`);
     return true;
   },
 
   getDepartments: async () => {
-    const { data, error } = await supabase.from('departments').select('name');
-    if (error) return [];
-    return data?.map(d => d.name) || [];
+    const response = await api.get('/departments');
+    return response.data.map(d => d.name) || [];
   },
 
   addDepartment: async (name) => {
-    await supabase.from('departments').insert([{ name }]);
+    await api.post('/departments', { name });
   },
 
   deleteDepartment: async (name) => {
-    await supabase.from('departments').delete().eq('name', name);
+    await api.delete(`/departments/${name}`);
   }
 };
 

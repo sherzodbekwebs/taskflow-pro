@@ -12,14 +12,14 @@ import { uz } from 'date-fns/locale';
 export default function TaskDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  const { 
-    tasks, users, toggleSubtask, currentUser, isSuperAdmin, 
-    hasAccess, deleteTask, approveTask, rejectTask, 
-    updateTask, moveTask, isActionLoading 
+
+  const {
+    tasks, users, toggleSubtask, currentUser, isSuperAdmin,
+    hasAccess, deleteTask, approveTask, rejectTask,
+    updateTask, moveTask, isActionLoading
   } = useApp();
 
-  const task = useMemo(() => tasks.find(t => t.id === id), [id, tasks]);
+  const task = useMemo(() => tasks.find(t => String(t.id) === String(id)), [id, tasks]);
 
   const [zoomImage, setZoomImage] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
@@ -35,16 +35,16 @@ export default function TaskDetailPage() {
     if (task.is_recurring) {
       const type = task.recurring_type;
       const val = task.recurring_value;
-      
+
       if (type === 'daily') return "Ҳар куни";
       if (type === 'weekly') return "Ҳар ҳафта";
-      
+
       // Agar start-end ko'rinishidagi ob'ekt bo'lsa
       if (typeof val === 'object' && val !== null) {
         const label = type === 'monthly' ? 'Ҳар ой' : type === 'quarterly' ? 'Ҳар чорак' : 'Ҳар йил';
         return `${label} (${val.start}-${val.end} саналарда)`;
       }
-      
+
       // Agar bitta raqam bo'lsa
       if (val) {
         const label = type === 'monthly' ? 'Ҳар ой' : type === 'quarterly' ? 'Ҳар чорак' : 'Ҳар йил';
@@ -53,12 +53,12 @@ export default function TaskDetailPage() {
 
       return "Такрорланувчи";
     }
-    
+
     // Agar oddiy vazifa bo'lsa
     return task.deadline ? format(new Date(task.deadline), 'dd MMM, yyyy', { locale: uz }) : '—';
   };
 
-  const assignedUser = users.find(u => u.id === task.assignedUser);
+  const assignedUser = users.find(u => String(u.id) === String(task?.assignedUser));
   const doneCount = task.subtasks?.filter(s => s.done).length || 0;
   const totalCount = task.subtasks?.length || 0;
   const progress = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
@@ -152,7 +152,7 @@ export default function TaskDetailPage() {
                   </h1>
                   <div className="flex gap-1 flex-shrink-0 mt-1">
                     <span className={`badge-${task.status} px-2 py-0.5 text-[9px] font-bold uppercase`}>
-                       {task.status === 'review' ? 'Текширувда' : (task.status === 'done' ? 'Тугалланган' : task.status)}
+                      {task.status === 'review' ? 'Текширувда' : (task.status === 'done' ? 'Тугалланган' : task.status)}
                     </span>
                     <span className={`badge-${task.priority} px-2 py-0.5 text-[9px] font-bold uppercase`}>{task.priority}</span>
                   </div>
@@ -227,7 +227,7 @@ export default function TaskDetailPage() {
                     <Layers size={32} className="text-slate-400" />
                   </div>
                   <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest px-4">Босқичлар белгиланмаган</p>
-                  
+
                   {task.status !== 'review' && task.status !== 'done' && (
                     <button
                       onClick={() => moveTask(task.id, 'review')}
@@ -243,7 +243,7 @@ export default function TaskDetailPage() {
           </div>
         </div>
       </div>
-      
+
       {/* MODALS SECTION */}
       {showNoPerm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowNoPerm(false)}>

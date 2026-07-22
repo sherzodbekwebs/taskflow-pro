@@ -194,29 +194,6 @@ export function AppProvider({ children }) {
     NotificationService.add({ title, message: msg, type, icon }, ids).catch(console.error);
   };
 
-  // const addTask = async (taskData) => {
-  //   setIsActionLoading(true);
-  //   try {
-  //     const realTask = await TaskService.add(taskData);
-
-  //     // МАНА ШУ ҚАТОРНИ ҚЎШИНГ (Оптимистик янгилаш)
-  //     // Янги келган вазифани массивнинг ЭНГ БОШИГА қўшамиз
-  //     setTasks(prevTasks => [realTask, ...prevTasks]);
-
-  //     await refreshData(); // Кейин сервер билан синхронлаймиз
-
-  //     const assigned = users.find(u => String(u.id) === String(taskData.assignedUser));
-  //     if (assigned) TelegramService.sendNotification(realTask, assigned, 'create').catch(console.error);
-  //     notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
-  //     showToast("Вазифа яратилди");
-  //   } catch (err) {
-  //     console.error(err);
-  //     showToast("Xato yuz berdi");
-  //   } finally {
-  //     setIsActionLoading(false);
-  //   }
-  // };
-
   const updateTask = async (id, updates) => {
     setIsActionLoading(true);
     try {

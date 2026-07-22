@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import TaskService from '../../services/taskService';
-import { X, Plus, Trash2, FileText, AlignLeft, Building2, RefreshCw, CalendarDays, Calendar } from 'lucide-react';
+// Eye ikonkasi nabludatel uchun
+import { X, Plus, Trash2, FileText, AlignLeft, Building2, RefreshCw, CalendarDays, Calendar, Eye } from 'lucide-react';
 
 export default function TaskModal({ task, onClose }) {
-  // currentUser context'dan olindi
   const { addTask, updateTask, users, departments, t, currentUser } = useApp();
   const fileInputRef = useRef();
   const isEdit = !!(task && task.id);
@@ -12,9 +12,9 @@ export default function TaskModal({ task, onClose }) {
 
   const [form, setForm] = useState({
     title: '', description: '', 
-    status: task?.status || 'new', // Kanban'dan kelsa statusni oladi
-    // Yangi vazifa bo'lsa currentUser ma'lumotlarini default qilib qo'yamiz
+    status: task?.status || 'new',
     assignedUser: task?.assignedUser || (isEdit ? '' : currentUser?.id) || '',
+    observer: task?.observer || '', // Tekshiruvchi ID si uchun
     department: task?.department || (isEdit ? '' : currentUser?.department) || '',
     deadline: '',
     created_at: new Date().toISOString().split('T')[0],
@@ -34,8 +34,8 @@ export default function TaskModal({ task, onClose }) {
         title: task.title || '',
         description: task.description || '',
         status: task.status || 'new',
-        // Agar tahrirlash bo'lsa task'dagini, yangi bo'lsa currentUser'nikini qo'yadi
         assignedUser: task.assignedUser || (task.id ? '' : currentUser?.id) || '',
+        observer: task.observer || '', // Edit rejimida saqlangan tekshiruvchini yuklash
         department: task.department || (task.id ? '' : currentUser?.department) || '',
         deadline: task.deadline ? new Date(task.deadline).toISOString().split('T')[0] : '',
         created_at: task.created_at ? new Date(task.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -77,11 +77,15 @@ export default function TaskModal({ task, onClose }) {
       };
     }
 
+    // Tekshiruvchi (Observer) ma'lumotlarini olish
+    const selectedObserver = users.find(u => u.id === form.observer);
+
     const data = {
       title: form.title.trim(),
       description: form.description || null,
       status: form.status || 'new',
       assignedUser: form.assignedUser === "" ? null : form.assignedUser,
+      observer: form.observer === "" ? null : form.observer, // Serverga yuboriladigan ID
       department: form.department === "" ? null : form.department,
       deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
       subtasks: form.subtasks.filter(s => s.text.trim()),
@@ -89,7 +93,9 @@ export default function TaskModal({ task, onClose }) {
       is_recurring: form.is_recurring,
       recurring_type: form.is_recurring ? form.recurring_type : 'none',
       recurring_value: form.is_recurring ? rValue : null,
-      created_at: form.created_at ? new Date(form.created_at).toISOString() : new Date().toISOString()
+      created_at: form.created_at ? new Date(form.created_at).toISOString() : new Date().toISOString(),
+      // Agar backend orqali emas, frontend'dan nimadir qo'shimcha qilmoqchi bo'lsangiz:
+      observer_info: selectedObserver ? { name: selectedObserver.fullName, telegram_id: selectedObserver.telegram_id } : null
     };
 
     if (isEdit) {
@@ -121,6 +127,7 @@ export default function TaskModal({ task, onClose }) {
                 <input className="input text-base font-semibold py-3 px-4 rounded-xl border-slate-200 w-full" value={form.title} onChange={e => set('title', e.target.value)} required />
               </div>
 
+              {/* Recurring Task Logic - O'zgarishsiz qoldi */}
               <div className="p-5 bg-primary-50/30 dark:bg-primary-900/10 rounded-2xl border border-primary-100 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -132,7 +139,6 @@ export default function TaskModal({ task, onClose }) {
                     if (e.target.checked && form.recurring_type === 'none') set('recurring_type', 'daily');
                   }} />
                 </div>
-
                 {form.is_recurring && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                     <div className="space-y-1">
@@ -145,7 +151,6 @@ export default function TaskModal({ task, onClose }) {
                         <option value="yearly">Ҳар йиллик</option>
                       </select>
                     </div>
-
                     {['monthly', 'quarterly', 'yearly'].includes(form.recurring_type) && (
                       <div className="col-span-1 sm:col-span-2 grid grid-cols-2 gap-4">
                         <div className="space-y-1">
@@ -187,7 +192,23 @@ export default function TaskModal({ task, onClose }) {
                   <input type="date" className="input h-9 text-[11px] font-bold rounded-lg w-full" value={form.created_at} onChange={e => set('created_at', e.target.value)} />
                 </div>
                 <div className="space-y-1"><label className="text-[9px] font-bold text-slate-400 uppercase">{t.department}</label><select className="input h-9 text-[11px] font-bold rounded-lg w-full" value={form.department} onChange={e => set('department', e.target.value)}><option value="">—</option>{departments.map((d, i) => <option key={i} value={d}>{d}</option>)}</select></div>
+                
+                {/* MAS'UL XODIM */}
                 <div className="space-y-1"><label className="text-[9px] font-bold text-slate-400 uppercase">{t.assignTo}</label><select className="input h-9 text-[11px] font-bold rounded-lg w-full" value={form.assignedUser} onChange={e => set('assignedUser', e.target.value)}><option value="">— {t.all} —</option>{users.map(u => <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>)}</select></div>
+
+                {/* NABLYUDATEL (TEKSHIRUVCHI) QO'SHILDI */}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                    <Eye size={10} /> Tekshiruvchi / Наблюдатель
+                  </label>
+                  <select className="input h-9 text-[11px] font-bold rounded-lg w-full border-primary-200 focus:border-primary-500" value={form.observer} onChange={e => set('observer', e.target.value)}>
+                    <option value="">— {t.all} —</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="space-y-1"><label className="text-[9px] font-bold text-slate-400 uppercase">{t.deadline}</label><input type="date" className="input h-9 text-[11px] font-bold rounded-lg w-full" value={form.deadline} onChange={e => set('deadline', e.target.value)} /></div>
               </div>
 

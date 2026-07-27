@@ -4,7 +4,8 @@ import { useApp } from '../../contexts/AppContext';
 import NotificationPanel from '../notifications/NotificationPanel';
 import {
   LayoutDashboard, CheckSquare, Users, BarChart3, Settings,
-  Bell, LogOut, Menu, X, Sun, Moon, Globe, Loader2, CheckCircle2, Clock
+  Bell, LogOut, Menu, X, Sun, Moon, Globe, Loader2, CheckCircle2, Clock,
+  PhoneCall // Yangi ikonka qo'shildi
 } from 'lucide-react';
 
 export default function Layout() {
@@ -27,14 +28,12 @@ export default function Layout() {
   }, []);
 
   const formatDateTime = () => {
-    // Sana formati: 22.05.2026
     const dateStr = time.toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
     });
 
-    // Vaqt formati: 10:21:19
     const timeStr = time.toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
@@ -55,6 +54,7 @@ export default function Layout() {
     { to: '/', icon: LayoutDashboard, label: t.dashboard, exact: true },
     { to: '/tasks', icon: CheckSquare, label: t.tasks },
     { to: '/users', icon: Users, label: t.users },
+    { to: '/call-center', icon: PhoneCall, label: "Koll-markaz" }, // YANGI BO'LIM QO'SHILDI
     { to: '/statistics', icon: BarChart3, label: t.statistics },
     { to: '/settings', icon: Settings, label: t.settings },
   ];
@@ -161,14 +161,12 @@ export default function Layout() {
             <Menu size={20} />
           </button>
 
-          {/* --- YANGI QO'SHILGAN SOAT QISMI --- */}
           <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm animate-fade-in">
             <Clock size={14} className="text-primary-500 animate-pulse" />
             <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest tabular-nums">
               {formatDateTime()}
             </span>
           </div>
-          {/* ---------------------------------- */}
 
           <div className="flex items-center gap-2 ml-auto">
             <button onClick={() => changeLanguage(language === 'uz' ? 'ru' : 'uz')} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">

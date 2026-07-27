@@ -75,14 +75,14 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div>
+      {/* <div>
         <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
           {t.welcomeBack}, {currentUser?.fullName?.split(' ')[0] || currentUser?.fullname?.split(' ')[0]} 👋
         </h1>
         <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">
           {format(new Date(), 'dd MMMM yyyy, EEEE', { locale: language === 'uz' ? uz : undefined })}
         </p>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

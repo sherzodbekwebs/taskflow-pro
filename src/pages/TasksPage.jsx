@@ -10,10 +10,13 @@ import {
   Printer
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { uz } from 'date-fns/locale';
+import { uz, ru } from 'date-fns/locale'; // Tilga qarab lokalni ham o'zgartirish mumkin
 
 export default function TasksPage() {
-  const { tasks, users, departments, t, deleteTask, isActionLoading, refreshData } = useApp();
+  const {
+    tasks, users, departments, t, language, deleteTask, isActionLoading, refreshData,
+    taskFilters, setTaskFilters,
+  } = useApp();
 
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
@@ -21,25 +24,40 @@ export default function TasksPage() {
   const [view, setView] = useState('kanban');
   const [defaultStatus, setDefaultStatus] = useState('new');
 
+  // Tanlangan tilga qarab date-fns lokalini tanlash
+  const dateLocale = language === 'uz' ? uz : ru;
+
   const statusLabels = {
-    new: t.statusNew || t.new || "Янги",
-    progress: t.statusProgress || t.progress || "Жараёнда",
-    review: t.statusReview || t.review || "Текширувда",
-    done: t.statusDone || t.done || "Тугалланган"
+    new: t.statusNew || "Янги",
+    progress: t.statusProgress || "Жараёнда",
+    review: t.statusReview || "Текширувda",
+    done: t.statusDone || "Тугалланган"
   };
 
   const getDeadlineDisplay = (task) => {
     if (!task.is_recurring) {
-      return task.deadline ? format(new Date(task.deadline), 'dd MMM, yyyy', { locale: uz }) : "—";
+      return task.deadline ? format(new Date(task.deadline), 'dd MMM, yyyy', { locale: dateLocale }) : "—";
     }
-    const weekdays = ["", "Душанба", "Сешанба", "Чоршанба", "Пайшанба", "Жума", "Шанба", "Якшанба"];
+
+    // Hafta kunlari tarjimalari
+    const weekdays = [
+      "",
+      t.monday || "Душанба",
+      t.tuesday || "Сешанба",
+      t.wednesday || "Чоршанба",
+      t.thursday || "Пайшанба",
+      t.friday || "Жума",
+      t.saturday || "Шанба",
+      t.sunday || "Якшанба"
+    ];
+
     switch (task.recurring_type) {
-      case 'daily': return "Ҳар куни";
-      case 'weekly': return `Ҳар ҳаfta (${weekdays[task.recurring_value] || ""})`;
-      case 'monthly': return `Ҳар ой (${task.recurring_value}-сана)`;
-      case 'quarterly': return `Ҳар чорак (${task.recurring_value}-сана)`;
-      case 'yearly': return `Ҳар йил (${task.recurring_value}-сана)`;
-      default: return "Такрорланувчи";
+      case 'daily': return t.daily || "Ҳар куni";
+      case 'weekly': return `${t.weekly || "Ҳар ҳафта"} (${weekdays[task.recurring_value] || ""})`;
+      case 'monthly': return `${t.monthly || "Ҳар ой"} (${task.recurring_value})`;
+      case 'quarterly': return `${t.quarterly || "Ҳар чорак"} (${task.recurring_value})`;
+      case 'yearly': return `${t.yearly || "Ҳар йил"} (${task.recurring_value})`;
+      default: return t.recurring || "Такрорланувчи";
     }
   };
 
@@ -60,11 +78,16 @@ export default function TasksPage() {
     refreshData();
   }, [refreshData]);
 
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterUser, setFilterUser] = useState('all');
+  // MUHIM: search/filterStatus/filterUser endi mahalliy state emas,
+  // AppContext'dagi taskFilters orqali boshqariladi. Shunga ko'ra
+  // boshqa pagega o'tib qaytib kelganda ham filterlar saqlanib qoladi.
+  const { search, status: filterStatus, user: filterUser } = taskFilters;
 
-  // TasksPage.js ichidagi filtered logic
+  const setSearch = (val) => setTaskFilters({ search: val });
+  const setFilterStatus = (val) => setTaskFilters({ status: val });
+  const setFilterUser = (val) => setTaskFilters({ user: val });
+  const clearFilters = () => setTaskFilters({ search: '', status: 'all', user: 'all' });
+
   const filtered = useMemo(() => {
     return [...tasks]
       .filter(task => {
@@ -74,7 +97,6 @@ export default function TasksPage() {
         return true;
       })
       .sort((a, b) => {
-        // Eng oxirgi yangilangan vazifa doim tepada turishi uchun:
         const timeA = new Date(a.updated_at || a.created_at || a.id).getTime();
         const timeB = new Date(b.updated_at || b.created_at || b.id).getTime();
         return timeB - timeA;
@@ -105,9 +127,9 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="w-full pb-10">
 
-      <div className="sticky top-0 z-[10] pb-4 print:hidden">
+      <div className="pb-4 print:hidden">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] p-4 sm:p-5 space-y-5 transition-colors shadow-none">
 
           <div className="flex items-center justify-between gap-4">
@@ -130,7 +152,7 @@ export default function TasksPage() {
               {view === 'table' && (
                 <button
                   onClick={handlePrint}
-                  title="Чоп etish"
+                  title={t.print || "Чоп etish"}
                   className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-primary-500 border border-slate-100 dark:border-slate-700 transition-all"
                 >
                   <Printer size={18} />
@@ -138,9 +160,9 @@ export default function TasksPage() {
               )}
 
               <div className="flex bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-100 dark:border-slate-700 shadow-none">
-                <button title="Канбан" onClick={() => setView('kanban')} className={`p-1.5 rounded-lg transition-all ${view === 'kanban' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><LayoutGrid size={16} /></button>
-                <button title="Рўйхат" onClick={() => setView('list')} className={`p-1.5 rounded-lg transition-all ${view === 'list' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><List size={16} /></button>
-                <button title="Жадвал" onClick={() => setView('table')} className={`p-1.5 rounded-lg transition-all ${view === 'table' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><TableProperties size={16} /></button>
+                <button title={t.kanban || "Канбан"} onClick={() => setView('kanban')} className={`p-1.5 rounded-lg transition-all ${view === 'kanban' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><LayoutGrid size={16} /></button>
+                <button title={t.listView || "Рўйхат"} onClick={() => setView('list')} className={`p-1.5 rounded-lg transition-all ${view === 'list' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><List size={16} /></button>
+                <button title={t.tableView || "Жадвал"} onClick={() => setView('table')} className={`p-1.5 rounded-lg transition-all ${view === 'table' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><TableProperties size={16} /></button>
               </div>
               <button onClick={() => handleAddTask()} className="btn-primary h-10 px-3 sm:px-5 rounded-xl shadow-lg shadow-primary-500/10 font-bold text-[11px] sm:text-xs uppercase whitespace-nowrap">
                 <Plus size={16} /> <span className="hidden sm:inline">{t.addTask}</span>
@@ -156,7 +178,7 @@ export default function TasksPage() {
 
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
               <select className="input w-auto text-[11px] font-bold py-2 px-4 h-10 bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                <option value="all">Ҳамма ҳолатлар</option>
+                <option value="all">{t.allStatuses || "Ҳамма ҳолатлар"}</option>
                 <option value="new">{statusLabels.new}</option>
                 <option value="progress">{statusLabels.progress}</option>
                 <option value="review">{statusLabels.review}</option>
@@ -164,12 +186,12 @@ export default function TasksPage() {
               </select>
 
               <select className="input w-auto text-[11px] font-bold py-2 px-4 h-10 bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800" value={filterUser} onChange={e => setFilterUser(e.target.value)}>
-                <option value="all">Ҳамма ижрочилар</option>
+                <option value="all">{t.allAssignees || "Ҳамма ижрочилар"}</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>)}
               </select>
 
               {(search || filterStatus !== 'all' || filterUser !== 'all') && (
-                <button onClick={() => { setSearch(''); setFilterStatus('all'); setFilterUser('all'); }} className="p-2.5 rounded-xl bg-red-50 text-red-500 border border-red-100">
+                <button onClick={clearFilters} className="p-2.5 rounded-xl bg-red-50 text-red-500 border border-red-100">
                   <X size={16} />
                 </button>
               )}
@@ -178,7 +200,7 @@ export default function TasksPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar pb-10 print:overflow-visible">
+      <div className="print:overflow-visible overflow-x-auto">
         <div className="min-w-full">
           {view === 'kanban' ? (
             <div className="mt-1 min-w-[1200px] lg:min-w-0">
@@ -196,10 +218,10 @@ export default function TasksPage() {
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 print:bg-slate-100">
                     <th className="px-4 py-4 w-12 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center print:text-black">№</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">Вазифа номи</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">Масъул</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">Яратилган вақти</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right print:text-black">Муддат</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">{t.taskName || "Вазифа номи"}</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">{t.responsible || "Масъул"}</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">{t.createdAt || "Яратилган вақти"}</th>
+                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right print:text-black">{t.deadline || "Муддат"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -289,10 +311,12 @@ export default function TasksPage() {
           <div className="bg-white dark:bg-slate-800 rounded-[1rem] p-8 max-w-sm w-full shadow-2xl text-center border border-slate-100">
             <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-100"><AlertTriangle size={32} /></div>
             <h3 className="text-xl font-bold dark:text-white mb-2">{t.confirmDeletion}</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 italic">"{taskToDelete.title}" вазифасини ўчирасизми?</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 italic">
+               {t.deleteWarning?.replace('{title}', taskToDelete.title) || `"${taskToDelete.title}" вазифасини ўчирасизми?`}
+            </p>
             <div className="flex gap-3">
-              <button onClick={() => setTaskToDelete(null)} className="btn-secondary flex-1 py-3 font-bold">Йўқ</button>
-              <button onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex-1 py-3 transition-all">Ҳа</button>
+              <button onClick={() => setTaskToDelete(null)} className="btn-secondary flex-1 py-3 font-bold">{t.no || "Йўқ"}</button>
+              <button onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex-1 py-3 transition-all">{t.yes || "Ҳа"}</button>
             </div>
           </div>
         </div>

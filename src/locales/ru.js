@@ -16,6 +16,7 @@ export const ru = {
   actions: "Действия",
   you: "Вы",
   understand: "Понятно",
+  print: "Печать",
 
   // Auth & Login
   login: "Войти",
@@ -39,7 +40,7 @@ export const ru = {
   dashboard: "Главная",
   tasks: "Задачи",
   users: "Пользователи",
-  statistics: "Статистика",
+  statistics: "Оценка",
   settings: "Настройки",
   profile: "Профиль",
   notifications: "Уведомления",
@@ -67,6 +68,7 @@ export const ru = {
   addTask: "Добавить задачу",
   editTask: "Редактировать задачу",
   taskTitle: "Название задачи",
+  taskName: "Название задачи",
   taskDescription: "Описание",
   detailedDescription: "Детальное описание",
   assignTo: "Исполнитель",
@@ -80,6 +82,17 @@ export const ru = {
   noTasks: "Задачи отсутствуют",
   subtasks: "Этапы (To-do)",
   taskProgress: "Уровень выполнения",
+  operationsCountLabel: "ед.",
+  searchPlaceholder: "Поиск задач...",
+  allStatuses: "Все статусы",
+  allAssignees: "Все исполнители",
+  kanban: "Канбан",
+  listView: "Список",
+  tableView: "Таблица",
+  responsible: "Ответственный",
+  noTasksFound: "Задачи не найдены",
+  confirmDeletion: "Подтверждение удаления",
+  deleteWarning: 'Вы действительно хотите удалить задачу "{title}"?',
 
   // Status & Priority
   statusNew: "Новый",
@@ -89,6 +102,21 @@ export const ru = {
   priorityMedium: "Средний",
   priorityHigh: "Высокий",
   statusReview: "На проверке",
+
+  // Recurring & Dates
+  monday: "Понедельник",
+  tuesday: "Вторник",
+  wednesday: "Среда",
+  thursday: "Четверг",
+  friday: "Пятница",
+  saturday: "Суббота",
+  sunday: "Воскресенье",
+  daily: "Ежедневно",
+  weekly: "Еженедельно",
+  monthly: "Ежемесячно",
+  quarterly: "Ежеквартально",
+  yearly: "Ежегодно",
+  recurring: "Повторяющаяся",
 
   // Users & Settings
   addUser: "Добавить сотрудника",
@@ -135,4 +163,30 @@ export const ru = {
   // Notifications
   noNotifications: "Нет уведомлений",
   markAllRead: "Отметить все как прочитанные",
+
+  // Task Card
+  noPermissionModalDesc: "Извините, у вас недостаточно прав для выполнения этого действия. Только исполнитель задачи или администратор могут это сделать.",
+  commentPlaceholder: "Оставьте комментарий...",
+  approve: "Принять",
+  reject: "Отклонить",
+  unknownUser: "Пользователь",
+
+  // Task Modal
+  modalSubtitle: "Панель управления",
+  recurringTask: "Повторяющаяся задача",
+  period: "Период",
+  recurringStart: "Начало (1-31)",
+  recurringEnd: "Конец (1-31)",
+  createdDateLabel: "Дата создания",
+  observer: "Наблюдатель",
+
+  // Rating / Система оценки
+  rateTask: "Оцените задачу",
+  selectRatingHint: "Оцените качество выполненной работы",
+  ratingLabel: "Оценка",
+  noRating: "Без оценки",
+  rateAgain: "Оценить заново",
+  avgRating: "Средняя оценка",
+  ratingLeaderboard: "Рейтинг оценок",
+  ratedTasksCount: "оценено",
 };

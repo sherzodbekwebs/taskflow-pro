@@ -10,7 +10,9 @@ import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import TaskDetailPage from './pages/TaskDetailPage';
 import CallCenterPage from './pages/CallCenterPage';
+
 import { Loader2 } from 'lucide-react';
+import KPIDashboard from './pages/KPIDashboard';
 
 function ProtectedRoute({ children }) {
   const { currentUser, isAuthLoading } = useApp();
@@ -55,7 +57,9 @@ function AppRoutes() {
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="profile" element={<ProfilePage />} />
-          <Route path="/call-center" element={<CallCenterPage />} />
+          <Route path="/kpi" element={<KPIDashboard />} />
+
+          {/* <Route path="/call-center" element={<CallCenterPage />} /> */}
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

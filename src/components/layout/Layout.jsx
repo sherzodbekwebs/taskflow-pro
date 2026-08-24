@@ -4,7 +4,7 @@ import { useApp } from '../../contexts/AppContext';
 import NotificationPanel from '../notifications/NotificationPanel';
 import {
   LayoutDashboard, CheckSquare, Users, BarChart3, Settings,
-  Bell, LogOut, Menu, X, Sun, Moon, Globe, Loader2, CheckCircle2, Clock,
+  Bell, LogOut, Menu, X, Sun, Moon, Globe, Loader2, CheckCircle2, Clock, Wallet,
   PhoneCall // Yangi ikonka qo'shildi
 } from 'lucide-react';
 
@@ -53,9 +53,9 @@ export default function Layout() {
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: t.dashboard, exact: true },
     { to: '/tasks', icon: CheckSquare, label: t.tasks },
-    { to: '/users', icon: Users, label: t.users },
-    { to: '/call-center', icon: PhoneCall, label: "Koll-markaz" }, // YANGI BO'LIM QO'SHILDI
     { to: '/statistics', icon: BarChart3, label: t.statistics },
+    { to: '/kpi', icon: Wallet, label: "KPI" }, // YANGI QO'SHILDI
+    { to: '/users', icon: Users, label: t.users },
     { to: '/settings', icon: Settings, label: t.settings },
   ];
 

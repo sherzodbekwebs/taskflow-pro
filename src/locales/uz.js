@@ -16,6 +16,7 @@ export const uz = {
   actions: "Ҳаракатлар",
   you: "Сиз",
   understand: "Тушунарли",
+  print: "Чоп этиш",
 
   // Auth & Login
   login: "Кириш",
@@ -39,7 +40,7 @@ export const uz = {
   dashboard: "Бош саҳифа",
   tasks: "Вазифалар",
   users: "Фойдаланувчилар",
-  statistics: "Статистика",
+  statistics: "Баҳолаш",
   settings: "Созламалар",
   profile: "Профил",
   notifications: "Билдиришномалар",
@@ -67,6 +68,7 @@ export const uz = {
   addTask: "Вазифа қўшиш",
   editTask: "Вазифани таҳрирлаш",
   taskTitle: "Вазифа номи",
+  taskName: "Вазифа номи",
   taskDescription: "Тавсиф",
   detailedDescription: "Батафсил тавсиф",
   assignTo: "Ким учун",
@@ -80,6 +82,17 @@ export const uz = {
   noTasks: "Вазифалар мавжуд эмас",
   subtasks: "Босқичлар (To-do)",
   taskProgress: "Бажарилиш даражаси",
+  operationsCountLabel: "та",
+  searchPlaceholder: "Қидирув...",
+  allStatuses: "Ҳамма ҳолатлар",
+  allAssignees: "Ҳамма ижрочилар",
+  kanban: "Канбан",
+  listView: "Рўйхат",
+  tableView: "Жадвал",
+  responsible: "Масъул",
+  noTasksFound: "Маълумот мавжуд эмас",
+  confirmDeletion: "Ўчиришни тасдиқлаш",
+  deleteWarning: '"{title}" вазифасини ўчирасизми?',
 
   // Status & Priority
   statusNew: "Янги",
@@ -89,6 +102,21 @@ export const uz = {
   priorityMedium: "Ўрта",
   priorityHigh: "Юқори",
   statusReview: "Текширувда",
+
+  // Recurring & Dates
+  monday: "Душанба",
+  tuesday: "Сешанба",
+  wednesday: "Чоршанба",
+  thursday: "Пайшанба",
+  friday: "Жума",
+  saturday: "Шанба",
+  sunday: "Якшанба",
+  daily: "Ҳар куни",
+  weekly: "Ҳар ҳафта",
+  monthly: "Ҳар ой",
+  quarterly: "Ҳар чорак",
+  yearly: "Ҳар йил",
+  recurring: "Такрорланувчи",
 
   // Users & Settings
   addUser: "Ходим қўшиш",
@@ -135,4 +163,30 @@ export const uz = {
   // Notifications
   noNotifications: "Билдиришномалар йўқ",
   markAllRead: "Ҳаммасини ўқилган деб белгилаш",
+
+  // Task Card
+  noPermissionModalDesc: "Кечирасиз, ушбу амални бажариш учун сизда етарли рухсат мавжуд эмас. Фақат топшириқ эгаси ёки маъмурлар ушбу амални бажара олади.",
+  commentPlaceholder: "Фикр билдиринг...",
+  approve: "Қабул қилиш",
+  reject: "Рад этиш",
+  unknownUser: "Фойдаланувчи",
+
+  // Task Modal
+  modalSubtitle: "Бошқарув панели",
+  recurringTask: "Такрорланувчи вазифа",
+  period: "Давр",
+  recurringStart: "Бошланиш (1-31)",
+  recurringEnd: "Тугаш (1-31)",
+  createdDateLabel: "Қўшилган сана",
+  observer: "Текширувчи",
+
+  // Rating / Baholash tizimi
+  rateTask: "Вазифани баҳоланг",
+  selectRatingHint: "Бажарилган ишга баҳо беринг",
+  ratingLabel: "Баҳо",
+  noRating: "Баҳоланмаган",
+  rateAgain: "Қайта баҳолаш",
+  avgRating: "Ўртача баҳо",
+  ratingLeaderboard: "Баҳолаш рейтинги",
+  ratedTasksCount: "баҳоланган",
 };

@@ -21,6 +21,22 @@ export function AppProvider({ children }) {
   const [language, setLanguage] = useState('uz');
   const [darkMode, setDarkMode] = useState(false);
 
+  // MUHIM: Tasks sahifasidagi filterlar shu yerda, contextda saqlanadi.
+  // Shunga ko'ra foydalanuvchi boshqa pagega o'tib qaytib kelsa ham filterlar tozalanib ketmaydi.
+  const [taskFilters, setTaskFiltersState] = useState({
+    search: '',
+    status: 'all',
+    user: 'all',
+  });
+
+  const setTaskFilters = (updates) => {
+    setTaskFiltersState(prev => ({ ...prev, ...updates }));
+  };
+
+  const resetTaskFilters = () => {
+    setTaskFiltersState({ search: '', status: 'all', user: 'all' });
+  };
+
   const t = language === 'uz' ? uz : ru;
 
   const showToast = (msg) => {
@@ -195,6 +211,16 @@ export function AppProvider({ children }) {
   };
 
   const updateTask = async (id, updates) => {
+    // MUNISA LOGIKASI
+    const targetTask = tasks.find(t => String(t.id) === String(id));
+    const isMunisa = currentUser?.username === 'Munisa';
+    const isOwnTask = String(targetTask?.assignedUser) === String(currentUser?.id);
+
+    if (isMunisa && isOwnTask && updates.status === 'done') {
+      showToast("Siz o'z vazifangizni 'Bajarildi' qila olmaysiz!");
+      return; // Jarayonni to'xtatish
+    }
+
     setIsActionLoading(true);
     try {
       await TaskService.update(id, updates);
@@ -209,29 +235,31 @@ export function AppProvider({ children }) {
   };
 
   const moveTask = async (tid, ns) => {
+    // MUNISA LOGIKASI
+    const targetTask = tasks.find(t => String(t.id) === String(tid));
+    const isMunisa = currentUser?.username === 'Munisa';
+    const isOwnTask = String(targetTask?.assignedUser) === String(currentUser?.id);
+
+    if (isMunisa && isOwnTask && ns === 'done') {
+      showToast("Siz o'z vazifangizni 'Bajarildi' qila olmaysiz!");
+      return; // Jarayonni to'xtatish
+    }
+
     setIsActionLoading(true);
     try {
       let targetStatus = ns;
-      // Admin bo'lmasa, 'done' qilishdan oldin 'review'ga yuborish
       if (targetStatus === 'done' && !hasAccess) targetStatus = 'review';
 
       const updates = {
         status: targetStatus,
         completed: targetStatus === 'done',
-        // MUXIM: Vazifa o'zgargan vaqtini ham yuboramiz
         updated_at: new Date().toISOString()
       };
 
-      // 1. Serverda yangilash
       const updatedRecord = await TaskService.update(tid, updates);
-
-      // 2. Ma'lumotlarni qayta yuklash 
-      // (Oldingi javobimda refreshData ichidagi sort'ni updated_at bo'yicha to'g'rilagan edik)
       await refreshData();
-
       showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланди");
 
-      // Telegram bildirishnoma
       const assigned = users.find(u => String(u.id) === String(updatedRecord.assignedUser));
       if (assigned) {
         TelegramService.sendNotification(updatedRecord, assigned, 'update').catch(e => console.error("TG error:", e));
@@ -271,17 +299,46 @@ export function AppProvider({ children }) {
     }
   };
 
-  const approveTask = async (tid) => {
+  const approveTask = async (tid, rating = null) => {
+    // MUNISA LOGIKASI
+    const targetTask = tasks.find(t => String(t.id) === String(tid));
+    const isMunisa = currentUser?.username === 'Munisa';
+    const isOwnTask = String(targetTask?.assignedUser) === String(currentUser?.id);
+
+    if (isMunisa && isOwnTask) {
+      showToast("O'z vazifangizni o'zingiz tasdiqlay olmaysiz!");
+      return; // Jarayonni to'xtatish
+    }
+
     setIsActionLoading(true);
     try {
-      // Shunchaki status emas, vaqtni ham yangilang
-      await TaskService.update(tid, {
+      const updates = {
         status: 'done',
         completed: true,
-        updated_at: new Date().toISOString() // SHUNI QO'SHING
-      });
+        updated_at: new Date().toISOString()
+      };
+      if (rating && rating >= 1 && rating <= 5) {
+        updates.rating = rating;
+      }
+      await TaskService.update(tid, updates);
       await refreshData();
       showToast("Вазифа тасдиқланди");
+    } catch (err) { console.error(err); }
+    finally { setIsActionLoading(false); }
+  };
+
+  // Allaqachon 'done' bo'lgan vazifani qayta baholash (yoki birinchi marta baholash)
+  const rateTask = async (tid, rating) => {
+    if (rating === undefined || rating === null) return;
+    if (rating < 0 || rating > 5) return;
+    setIsActionLoading(true);
+    try {
+      await TaskService.update(tid, {
+        rating: rating > 0 ? rating : null,
+        updated_at: new Date().toISOString()
+      });
+      await refreshData();
+      showToast(rating > 0 ? "Баҳо сақланди" : "Баҳо олиб ташланди");
     } catch (err) { console.error(err); }
     finally { setIsActionLoading(false); }
   };
@@ -338,6 +395,7 @@ export function AppProvider({ children }) {
   const logout = () => {
     setCurrentUser(null);
     window.sessionStorage.removeItem('taskflow_session');
+    resetTaskFilters();
   };
 
   return (
@@ -345,8 +403,9 @@ export function AppProvider({ children }) {
       currentUser, isAuthLoading, isActionLoading, isSuperAdmin, hasAccess, toast,
       tasks, users, departments, notifications, unreadCount: notifications.filter(n => !n.read).length,
       language, darkMode, t,
+      taskFilters, setTaskFilters, resetTaskFilters,
       login, logout, refreshData,
-      addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask,
+      addTask, updateTask, deleteTask, toggleSubtask, addComment, moveTask, approveTask, rejectTask, rateTask,
       addUser, updateUser, deleteUser, addDepartment, deleteDepartment,
       markNotifRead: (id) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));

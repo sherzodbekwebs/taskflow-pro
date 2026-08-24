@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { Plus, Trash2, Edit, User, Building2, Eye, EyeOff, X, ShieldAlert, Maximize2 } from 'lucide-react';
+import star from '../../public/star.png';
 
 // Vakolat yetarli emas modali
 function NoPermissionModal({ onClose }) {
@@ -28,7 +29,7 @@ function UserModal({ user, onClose }) {
   const [form, setForm] = useState({
     fullName: user?.fullName || user?.fullname || '',
     username: user?.username || '',
-    password: '', 
+    password: '',
     role: user?.role || 'worker',
     department: user?.department || '',
   });
@@ -45,9 +46,9 @@ function UserModal({ user, onClose }) {
     if (isEdit) {
       await updateUser(user.id, userData);
     } else {
-      if (!userData.password) { 
-        alert(t.passwordRequired || "Yangi xodim uchun parol kiriting!"); 
-        return; 
+      if (!userData.password) {
+        alert(t.passwordRequired || "Yangi xodim uchun parol kiriting!");
+        return;
       }
       await addUser(userData);
     }
@@ -67,12 +68,12 @@ function UserModal({ user, onClose }) {
           <div>
             <label className="label">{t.password} {isEdit && `(${t.leaveBlankToKeep})`}</label>
             <div className="relative">
-              <input 
-                className="input pr-10" 
-                type={showPassword ? 'text' : 'password'} 
-                value={form.password} 
-                onChange={e => set('password', e.target.value)} 
-                required={!isEdit} 
+              <input
+                className="input pr-10"
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={e => set('password', e.target.value)}
+                required={!isEdit}
                 placeholder={isEdit ? '••••••' : ''}
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -97,13 +98,16 @@ export default function UsersPage() {
   const [showNoPerm, setShowNoPerm] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [zoomImage, setZoomImage] = useState(null); 
+  const [zoomImage, setZoomImage] = useState(null);
 
   const sortedUsers = useMemo(() => {
-    const adminUser = users.find(u => u.username === 'admin');
-    const me = users.find(u => u.id === currentUser?.id && u.username !== 'admin');
-    const others = users.filter(u => u.username !== 'admin' && u.id !== currentUser?.id);
+    const sherzod = users.find(u => u.username === 'sherzod');
+    const adminUser = users.find(u => u.username === 'admin' && u.username !== 'sherzod');
+    const me = users.find(u => u.id === currentUser?.id && u.username !== 'admin' && u.username !== 'sherzod');
+    const others = users.filter(u => u.username !== 'sherzod' && u.username !== 'admin' && u.id !== currentUser?.id);
+
     const result = [];
+    if (sherzod) result.push(sherzod);
     if (adminUser) result.push(adminUser);
     if (me) result.push(me);
     result.push(...others);
@@ -131,12 +135,6 @@ export default function UsersPage() {
     else setShowNoPerm(true);
   };
 
-  const handleDelete = async (userId) => {
-    if (userId === currentUser?.id) return;
-    await deleteUser(userId);
-    setDeleteConfirm(null);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -144,8 +142,8 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t.users}</h1>
           <p className="text-sm text-slate-500 mt-1">{t.totalUsersLabel || "Jami foydalanuvchilar"}: {users.length}</p>
         </div>
-        <button 
-          onClick={() => isSuperAdmin ? setShowModal(true) : setShowNoPerm(true)} 
+        <button
+          onClick={() => isSuperAdmin ? setShowModal(true) : setShowNoPerm(true)}
           className="btn-primary"
         >
           <Plus size={18} /> {t.addUser}
@@ -158,21 +156,21 @@ export default function UsersPage() {
           const name = user.fullName || user.fullname || user.username || 'Xodim';
           const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
           const isMe = user.id === currentUser?.id;
+          const isSherzod = user.username === 'sherzod';
 
           return (
-            <div key={user.id} className="card p-6 border-transparent hover:border-primary-100 transition-all shadow-none border-slate-200 bg-white dark:bg-slate-800 rounded-[0.7rem]">
+            <div key={user.id} className={`p-6 transition-all bg-white dark:bg-slate-800 rounded-[1.2rem] shadow-sm hover:shadow-md border-none relative group`}>
               <div className="flex items-start justify-between mb-5">
-                <div className="flex items-center gap-5"> {/* gap-4 dan gap-5 га оширилди */}
-                  
-                  {/* РАСМ КАТТАЛАШТИРИЛДИ (w-20 h-20) */}
-                  <div 
-                    className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md overflow-hidden relative group flex-shrink-0 ${user.avatar ? 'cursor-zoom-in' : ''}`}
+                <div className="flex items-center gap-4">
+
+                  <div
+                    className={`w-20 h-20 rounded-[1.2rem] flex items-center justify-center text-white font-black text-2xl shadow-sm overflow-hidden relative group flex-shrink-0 ${user.avatar ? 'cursor-zoom-in' : ''}`}
                     onClick={() => user.avatar && setZoomImage(user.avatar)}
                   >
                     {user.avatar ? (
                       <img src={user.avatar} alt={name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                      <div className={`w-full h-full flex items-center justify-center ${isSherzod ? 'bg-gradient-to-tr from-indigo-500 to-purple-500' : 'bg-gradient-to-br from-primary-400 to-primary-600'}`}>
                         {initials}
                       </div>
                     )}
@@ -183,36 +181,50 @@ export default function UsersPage() {
                     )}
                   </div>
 
-                  <div className="min-w-0">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{name}</p>
-                        {isMe && <span className="text-[10px] font-bold bg-primary-100 text-primary-600 dark:bg-primary-900/30 px-2 py-0.5 rounded-full uppercase flex-shrink-0">{t.you || "Siz"}</span>}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-slate-900 dark:text-white text-[15px] leading-tight break-words">{name}</p>
+
+                        {/* SHERZOD UCHUN GRADIENTLI MOVIY YULDUZCHA */}
+                        {isSherzod && (
+                          <div className="flex items-center justify-center w-5 h-5 rounded-md">
+                            <img style={{ height: '18px' }} src={star} alt="" />
+                          </div>
+                        )}
+
+                        {isMe && <span className="text-[9px] font-black bg-[#E8F5FF] text-[#3B82F6] px-2 py-0.5 rounded-md uppercase">ВЫ</span>}
                       </div>
-                      <p className="text-sm text-slate-500 font-medium truncate">@{user.username}</p>
+                      <p className="text-sm text-slate-400 font-medium truncate">@{user.username}</p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => handleEdit(user)} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-primary-500"><Edit size={16} /></button>
-                  {!isMe && (
-                    <button onClick={() => handleDeleteClick(user)} className="p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500"><Trash2 size={16} /></button>
-                  )}
+                  <button onClick={() => handleEdit(user)} className="p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-300 hover:text-primary-500 transition-colors"><Edit size={16} /></button>
                 </div>
               </div>
 
               <div className="flex gap-2 mb-6">
-                <span className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-300 border border-slate-100 dark:border-slate-700">
-                  {user.role === 'boss' ? t.boss : t.worker}
+                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight ${isSherzod ? 'bg-[#EEF1FF] text-[#5865F2]' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-300'}`}>
+                  {user.role === 'boss' ? 'BOSS' : 'СОТРУДНИК'}
                 </span>
-                {user.department && <span className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-700/50 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-300 border border-slate-100 dark:border-slate-700">{user.department}</span>}
+                {user.department && <span className="px-3 py-1 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-[10px] font-black uppercase tracking-tight text-slate-400">SAYT</span>}
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-5 border-t border-slate-50 dark:border-slate-700">
-                <div className="text-center"><p className="text-xl font-black dark:text-white">{stats.total}</p><p className="text-[10px] text-slate-400 font-bold uppercase">{t.tasksCount}</p></div>
-                <div className="text-center"><p className="text-xl font-black text-green-500">{stats.completed}</p><p className="text-[10px] text-slate-400 font-bold uppercase">{t.completedCount}</p></div>
-                <div className="text-center"><p className="text-xl font-black text-amber-500">{stats.pending}</p><p className="text-[10px] text-slate-400 font-bold uppercase">{t.pendingCount}</p></div>
+              <div className="grid grid-cols-3 gap-2 pt-6 border-t border-slate-50 dark:border-slate-700">
+                <div className="text-center">
+                  <p className="text-lg font-black text-slate-900 dark:text-white">{stats.total}</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">ЗАДАЧИ</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-black text-green-500">{stats.completed}</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">ГОТОВО</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-black text-orange-500">{stats.pending}</p>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">ОСТАЛОСЬ</p>
+                </div>
               </div>
             </div>
           );
@@ -221,24 +233,18 @@ export default function UsersPage() {
 
       {zoomImage && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-10 animate-fade-in" onClick={() => setZoomImage(null)}>
-          <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all"><X size={32}/></button>
-          <img src={zoomImage} className="max-w-full max-h-full rounded-[0.7rem] border border-white/10 shadow-none" alt="zoom" />
+          <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all"><X size={32} /></button>
+          <img src={zoomImage} className="max-w-full max-h-full rounded-2xl shadow-2xl" alt="zoom" />
         </div>
       )}
 
       {showModal && <UserModal user={editUser} onClose={() => { setShowModal(false); setEditUser(null); }} />}
       {showNoPerm && <NoPermissionModal onClose={() => setShowNoPerm(false)} />}
-      
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center border border-slate-100">
-            <div className="w-12 h-12 bg-red-100 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} /></div>
-            <h3 className="text-lg font-bold dark:text-white mb-2">{t.deleteConfirmTitle || "O'chirishni tasdiqlang"}</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 italic">"{deleteConfirm.fullName || deleteConfirm.fullname}" {t.deleteConfirmDesc || "tizimdan butunlay o'chiriladi."}</p>
-            <div className="flex gap-3"><button onClick={() => setDeleteConfirm(null)} className="btn-secondary flex-1">{t.cancel}</button><button onClick={() => { deleteUser(deleteConfirm.id); setDeleteConfirm(null); }} className="btn-danger flex-1">{t.delete}</button></div>
-          </div>
-        </div>
-      )}
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .card:hover { border-color: transparent !important; }
+      `}} />
     </div>
   );
 }

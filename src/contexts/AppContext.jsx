@@ -86,9 +86,12 @@ export function AppProvider({ children }) {
 
       const assigned = users.find(u => String(u.id) === String(taskData.assignedUser));
 
+      // sherzod vazifa qo'shsa Telegram bildirishnomasi yuborilmaydi
+      const isSherzod = currentUser?.username === 'sherzod';
+
       // Билдиришномаларни хавфсиз юбориш (500 хатосини олдини олиш учун)
       try {
-        if (assigned) await TelegramService.sendNotification(realTask, assigned, 'create');
+        if (assigned && !isSherzod) await TelegramService.sendNotification(realTask, assigned, 'create');
         notifyAll("Янги вазифа", `"${taskData.title}" қўшилди`, 'task_added', 'plus');
       } catch (e) { console.error("Notification error:", e); }
 
@@ -260,8 +263,10 @@ export function AppProvider({ children }) {
       await refreshData();
       showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланди");
 
+      // sherzod vazifani ko'chirsa/yangilasa Telegram bildirishnomasi yuborilmaydi
+      const isSherzod = currentUser?.username === 'sherzod';
       const assigned = users.find(u => String(u.id) === String(updatedRecord.assignedUser));
-      if (assigned) {
+      if (assigned && !isSherzod) {
         TelegramService.sendNotification(updatedRecord, assigned, 'update').catch(e => console.error("TG error:", e));
       }
     } catch (err) {

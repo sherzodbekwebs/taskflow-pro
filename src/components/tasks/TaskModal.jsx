@@ -120,7 +120,7 @@ export default function TaskModal({ task, onClose }) {
               {isEdit ? t.editTask : t.addTask}
             </h2>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-              {isEdit ? "Vazifani tahrirlash rejimi" : "Yangi vazifa yaratish paneli"}
+              {isEdit ? t.editTaskSubtitle : t.addTaskSubtitle}
             </p>
           </div>
           <button onClick={() => onClose(false)} className="p-2.5 rounded-xl hover:bg-red-50 hover:text-red-500 text-slate-400 transition-all">
@@ -140,7 +140,7 @@ export default function TaskModal({ task, onClose }) {
                   className="w-full bg-slate-50 dark:bg-slate-800 border-none text-base font-bold py-4 px-6 rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all dark:text-white placeholder:text-slate-400" 
                   value={form.title} 
                   onChange={e => set('title', e.target.value)} 
-                  placeholder="Vazifa nomini kiriting..."
+                  placeholder={t.taskTitlePlaceholder}
                   required 
                 />
               </div>
@@ -180,14 +180,14 @@ export default function TaskModal({ task, onClose }) {
               {/* Description */}
               <div>
                 <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><AlignLeft size={14} /> {t.detailedDescription}</label>
-                <textarea className="w-full bg-slate-50 dark:bg-slate-800 border-none min-h-[200px] py-4 px-6 rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all dark:text-white text-sm leading-relaxed" value={form.description} onChange={e => set('description', e.target.value)} placeholder="Batafsil ma'lumot yozing..." />
+                <textarea className="w-full bg-slate-50 dark:bg-slate-800 border-none min-h-[200px] py-4 px-6 rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all dark:text-white text-sm leading-relaxed" value={form.description} onChange={e => set('description', e.target.value)} placeholder={t.descriptionPlaceholder} />
               </div>
 
               {/* Files */}
               <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[1.5rem] border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-4">
                   <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t.taskFiles}</label>
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black bg-primary-500 text-white px-4 py-2 rounded-xl hover:bg-primary-600 transition-all uppercase tracking-tighter">+ Qo'shish</button>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black bg-primary-500 text-white px-4 py-2 rounded-xl hover:bg-primary-600 transition-all uppercase tracking-tighter">{t.add}</button>
                 </div>
                 <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileAdd} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -208,7 +208,7 @@ export default function TaskModal({ task, onClose }) {
                 
                 {/* Status */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Holat</label>
+                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.status}</label>
                   <select className="w-full bg-white dark:bg-slate-900 border-none h-12 text-sm font-black rounded-xl shadow-sm dark:text-white px-4" value={form.status} onChange={e => set('status', e.target.value)}>
                     <option value="new">{t.statusNew}</option>
                     <option value="progress">{t.statusProgress}</option>
@@ -220,29 +220,29 @@ export default function TaskModal({ task, onClose }) {
                 {/* Dates (Yonma-yon) */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={13} /> Qo'shilgan sana</label>
+                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={13} /> {t.createdDate}</label>
                     <input type="date" className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-3" value={form.created_at} onChange={e => set('created_at', e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Clock size={13} /> Yakuniy muddat</label>
+                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Clock size={13} /> {t.deadlineDate}</label>
                     <input type="date" className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-3" value={form.deadline} onChange={e => set('deadline', e.target.value)} />
                   </div>
                 </div>
 
                 {/* Department */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Bo'lim</label>
+                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.department}</label>
                   <select className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-4" value={form.department} onChange={e => set('department', e.target.value)}>
-                    <option value="">—</option>
+                    <option value="">{t.none}</option>
                     {departments.map((d, i) => <option key={i} value={d}>{d}</option>)}
                   </select>
                 </div>
 
                 {/* Assign To (Kim uchun) */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Kim uchun</label>
+                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.assignTo}</label>
                   <select className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-4" value={form.assignedUser} onChange={e => set('assignedUser', e.target.value)}>
-                    <option value="">— Hammasi —</option>
+                    <option value="">{t.allUsers}</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>)}
                   </select>
                 </div>
@@ -250,10 +250,10 @@ export default function TaskModal({ task, onClose }) {
                 {/* Observer (Tekshiruvchi) */}
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Eye size={13} className="text-primary-500" /> Tekshiruvchi
+                    <Eye size={13} className="text-primary-500" /> {t.observer}
                   </label>
                   <select className="w-full bg-white dark:bg-slate-900 border border-primary-100 dark:border-primary-900/30 h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-4" value={form.observer} onChange={e => set('observer', e.target.value)}>
-                    <option value="">— Hammasi —</option>
+                    <option value="">{t.allUsers}</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>)}
                   </select>
                 </div>
@@ -262,8 +262,8 @@ export default function TaskModal({ task, onClose }) {
               {/* Subtasks (To-Do) */}
               <div className="space-y-4 px-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Bosqichlar (To-do)</label>
-                  <button type="button" onClick={() => set('subtasks', [...form.subtasks, { id: Date.now(), text: '', done: false }])} className="text-[9px] font-black bg-slate-800 dark:bg-slate-700 text-white px-3 py-1.5 rounded-lg hover:bg-black transition-all">+ Qo'shish</button>
+                  <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t.subtasksTitle}</label>
+                  <button type="button" onClick={() => set('subtasks', [...form.subtasks, { id: Date.now(), text: '', done: false }])} className="text-[9px] font-black bg-slate-800 dark:bg-slate-700 text-white px-3 py-1.5 rounded-lg hover:bg-black transition-all">{t.add}</button>
                 </div>
                 <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
                   {form.subtasks.map((st) => (
@@ -273,7 +273,7 @@ export default function TaskModal({ task, onClose }) {
                         className="w-full bg-slate-50 dark:bg-slate-800 border-none h-10 text-xs font-medium px-4 rounded-xl focus:ring-1 focus:ring-primary-500 dark:text-slate-300" 
                         value={st.text} 
                         onChange={e => set('subtasks', form.subtasks.map(s => s.id === st.id ? { ...s, text: e.target.value } : s))} 
-                        placeholder="Bosqich nomi..." 
+                        placeholder={t.subtaskPlaceholder} 
                       />
                       <button type="button" onClick={() => set('subtasks', form.subtasks.filter(s => s.id !== st.id))} className="text-slate-300 hover:text-red-500 transition-colors">
                         <Trash2 size={18} />

@@ -100,195 +100,325 @@ export default function TaskDetailPage() {
 
   return (
     <>
-      <div className="fixed top-16 left-0 lg:left-64 right-0 bottom-0 bg-[#e9eef2] dark:bg-slate-950 z-10 p-4 lg:p-6 flex flex-col overflow-hidden animate-fade-in font-sans">
+      <div className="space-y-6 max-w-6xl mx-auto pb-12 animate-fade-in">
 
-        {/* 1. HEADER SECTION */}
-        <div className="flex-shrink-0 space-y-4 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 hover:text-primary-500 transition-all font-bold uppercase text-[10px] tracking-widest w-fit">
-              <ArrowLeft size={16} /> {t.back}
+        {/* 1. TOP ACTION & NAVIGATION BAR */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white font-semibold text-xs transition-colors w-fit"
+          >
+            <ArrowLeft size={16} /> 
+            <span>{t.back || "Orqaga qaytish"}</span>
+          </button>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {task.status === 'review' && isAdminOnly && (
+              <>
+                <button 
+                  onClick={handleReject} 
+                  className="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 px-3.5 py-2 rounded-xl text-xs font-bold transition-all"
+                >
+                  <Undo2 size={15} /> 
+                  <span>{t.reject || "Qaytarish"}</span>
+                </button>
+                <button 
+                  onClick={handleApprove} 
+                  className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs"
+                >
+                  <Check size={15} /> 
+                  <span>{t.approve || "Tasdiqlash"}</span>
+                </button>
+              </>
+            )}
+
+            {task.status !== 'review' && task.status !== 'done' && (
+              <button
+                onClick={() => moveTask(task.id, 'review')}
+                disabled={isActionLoading}
+                className="flex items-center gap-1.5 btn-primary py-2 px-4 text-xs font-bold"
+              >
+                {isActionLoading ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle size={15} />
+                )}
+                <span>{t.finishTask || "Yakunlashga topshirish"}</span>
+              </button>
+            )}
+
+            <button 
+              onClick={() => canModify ? setShowEditModal(true) : setShowNoPerm(true)} 
+              className="btn-secondary py-2 px-3.5 text-xs font-semibold"
+            >
+              <Edit3 size={15} /> 
+              <span>{t.edit || "Tahrirlash"}</span>
             </button>
 
-            <div className="flex gap-2 w-full sm:w-auto items-center">
-              {task.status === 'review' && isAdminOnly && (
-                <div className="flex gap-2 flex-1 sm:flex-none mr-4">
-                  <button onClick={handleReject} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white px-4 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-amber-600">
-                    <Undo2 size={14} /> {t.reject}
-                  </button>
-                  <button onClick={handleApprove} className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white px-4 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-green-600">
-                    <Check size={14} /> {t.approve}
-                  </button>
-                </div>
-              )}
-
-              {task.status !== 'review' && task.status !== 'done' && (
-                <button
-                  onClick={() => moveTask(task.id, 'review')}
-                  disabled={isActionLoading}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-500 text-white px-5 py-2.5 rounded-[0.7rem] text-[10px] font-bold uppercase transition-all hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 disabled:opacity-50"
-                >
-                  {isActionLoading ? (
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <CheckCircle size={14} />
-                  )}
-                  {t.finishTask}
-                </button>
-              )}
-
-              <button onClick={() => canModify ? setShowDeleteConfirm(true) : setShowNoPerm(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-[0.7rem] text-slate-400 hover:text-red-500 transition-all uppercase text-[10px] font-bold tracking-widest">
-                <Trash2 size={14} /> {t.delete}
-              </button>
-              <button onClick={() => canModify ? setShowEditModal(true) : setShowNoPerm(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-[0.7rem] text-slate-400 hover:text-primary-500 transition-all uppercase text-[10px] font-bold tracking-widest">
-                <Edit3 size={14} /> {t.edit}
-              </button>
-            </div>
+            <button 
+              onClick={() => canModify ? setShowDeleteConfirm(true) : setShowNoPerm(true)} 
+              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors border border-slate-200/80 dark:border-slate-800"
+              title={t.delete || "O'chirish"}
+            >
+              <Trash2 size={16} />
+            </button>
           </div>
+        </div>
 
-          <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] shadow-none">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start lg:items-center">
-              <div className="lg:col-span-8 space-y-4">
-                <div className="flex flex-col md:flex-row md:items-start gap-3">
-                  <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-tight break-words flex-1">
-                    {task.title}
-                  </h1>
-                  <div className="flex gap-1 flex-shrink-0 mt-1">
-                    <span className={`badge-${task.status} px-2 py-0.5 text-[9px] font-bold uppercase`}>
-                      {task.status === 'review' ? t.statusReview : (task.status === 'done' ? t.statusDone : task.status)}
-                    </span>
-                    <span className={`badge-${task.priority} px-2 py-0.5 text-[9px] font-bold uppercase`}>{task.priority}</span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold"><User size={14} className="text-primary-500" /><span className="text-slate-400 uppercase text-[10px]">{t.assignee}:</span><span className="dark:text-white">{assignedUser?.fullName || assignedUser?.fullname || '—'}</span></div>
-                  {/* BU YERDA getDeadlineDisplay ISHLATILDI */}
-                  <div className="flex items-center gap-2 text-xs font-bold">
-                    <Calendar size={14} className="text-amber-500" />
-                    <span className="text-slate-400 uppercase text-[10px]">{t.deadlineLabel}:</span>
-                    <span className="dark:text-white">{getDeadlineDisplay()}</span>
-                  </div>
-                </div>
+        {/* 2. TASK OVERVIEW CARD */}
+        <div className="card p-6 lg:p-7">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-4 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                  task.status === 'done' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400' :
+                  task.status === 'progress' ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400' :
+                  task.status === 'review' ? 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-400' :
+                  'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-400'
+                }`}>
+                  {task.status === 'review' ? (t.statusReview || 'Tekshiruvda') : 
+                   task.status === 'done' ? (t.statusDone || 'Tugallangan') : 
+                   task.status === 'progress' ? (t.statusProgress || 'Jarayonda') : (t.statusNew || 'Yangi')}
+                </span>
+
+                <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider ${
+                  task.priority === 'high' ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400' :
+                  task.priority === 'medium' ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400' :
+                  'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                }`}>
+                  {task.priority || 'Normal'}
+                </span>
+
+                {task.department && (
+                  <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-md">
+                    {task.department}
+                  </span>
+                )}
               </div>
 
-              <div className="lg:col-span-4 pl-0 lg:pl-8 lg:border-l border-slate-100 dark:border-slate-700 w-full pt-4 lg:pt-0">
-                <div className="flex items-center justify-between mb-2"><span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t.progressLabel}</span><span className="text-xl font-black text-primary-500">{progress}%</span></div>
-                <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
-                  <div className="h-full bg-primary-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug">
+                {task.title}
+              </h1>
+
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-6 pt-1 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-[10px]">
+                    {(assignedUser?.fullName || assignedUser?.fullname || "?")[0].toUpperCase()}
+                  </div>
+                  <span>{t.assignee || "Mas'ul"}:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    {assignedUser?.fullName || assignedUser?.fullname || "Tayinlanmagan"}
+                  </span>
                 </div>
-                <p className="text-[9px] text-slate-400 mt-2 font-bold uppercase text-right">{doneCount} / {totalCount} {t.completedLabel}</p>
+
+                <div className="flex items-center gap-1.5">
+                  <Calendar size={14} className="text-amber-500" />
+                  <span>{t.deadlineLabel || "Muddat"}:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{getDeadlineDisplay()}</span>
+                </div>
               </div>
+            </div>
+
+            {/* Progress Gauge */}
+            <div className="lg:w-64 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800 flex flex-col justify-center">
+              <div className="flex items-baseline justify-between mb-2">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                  {t.progressLabel || "Ijro holati"}
+                </span>
+                <span className="text-xl font-extrabold text-primary-600 dark:text-primary-400">{progress}%</span>
+              </div>
+              <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-full bg-primary-500 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+              </div>
+              <p className="text-[11px] font-medium text-slate-400 mt-2 text-right">
+                {doneCount} / {totalCount} {t.completedLabel || "qism bajarildi"}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* 2. BODY SECTION */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
-          <div className="lg:col-span-8 overflow-y-auto p-1 space-y-4 custom-scrollbar">
-            <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem]">
-              <div className="flex items-center gap-2 text-slate-400 mb-6 font-bold uppercase text-[10px] tracking-widest"><Paperclip size={16} className="text-primary-500" /> {t.attachedFiles}</div>
+        {/* 3. DETAILS GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* Left Column: Description & Files */}
+          <div className="lg:col-span-8 space-y-6">
+            
+            {/* Description */}
+            <div className="card p-6">
+              <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-bold text-sm mb-4">
+                <AlignLeft size={16} className="text-primary-500" />
+                <span>{t.taskDescriptionLabel || "Batafsil tavsif"}</span>
+              </div>
+              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                {task.description || (t.noDescriptionText || "Ushbu vazifaga tavsif berilmagan.")}
+              </p>
+            </div>
+
+            {/* Files & Attachments */}
+            <div className="card p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-bold text-sm">
+                  <Paperclip size={16} className="text-primary-500" />
+                  <span>{t.attachedFiles || "Biriktirilgan fayllar"}</span>
+                </div>
+                {task.files?.length > 0 && (
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                    {task.files.length} ta fayl
+                  </span>
+                )}
+              </div>
+
               {task.files?.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {task.files.map((file, idx) => (
-                    <div key={idx} className="group relative rounded-[0.7rem] border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-900 aspect-square transition-all">
-                      <div onClick={() => handleFileClick(file)} className="w-full h-full cursor-pointer">
-                        {getIsImage(file.name) ? <img src={file.url} className="w-full h-full object-cover" alt="file" /> : <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center text-[7px] font-bold text-slate-400"><FileText size={20} className="text-slate-300 mb-1" /><span className="truncate w-full px-1">{file.name}</span></div>}
-                        <div className="absolute inset-0 bg-primary-500/10 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><Eye size={16} className="text-primary-500" /></div>
+                    <div 
+                      key={idx} 
+                      className="group relative rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden bg-slate-50 dark:bg-slate-900 aspect-square transition-all hover:shadow-xs"
+                    >
+                      <div onClick={() => handleFileClick(file)} className="w-full h-full cursor-pointer flex flex-col items-center justify-center p-2 text-center">
+                        {getIsImage(file.name) ? (
+                          <img src={file.url} className="w-full h-full object-cover rounded-lg" alt="file" />
+                        ) : (
+                          <>
+                            <FileText size={26} className="text-slate-400 mb-1.5" />
+                            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 line-clamp-2 px-1 break-all">{file.name}</span>
+                          </>
+                        )}
+                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
+                          <Eye size={20} className="text-white" />
+                        </div>
                       </div>
-                      <a href={file.url} download target="_blank" rel="noreferrer" className="absolute top-1 right-1 p-1 bg-white/80 dark:bg-slate-800/80 rounded shadow-sm text-slate-500 hover:text-primary-500 opacity-0 group-hover:opacity-100 transition-all"><Download size={12} /></a>
+                      <a 
+                        href={file.url} 
+                        download 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-2 right-2 p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-xs text-slate-600 dark:text-slate-300 hover:text-primary-600 transition-colors"
+                      >
+                        <Download size={13} />
+                      </a>
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-[10px] italic text-slate-400">{t.noFilesText}</p>}
-            </div>
-
-            <div className="bg-white dark:bg-slate-800 p-6 border border-slate-200 dark:border-slate-700 rounded-[0.7rem]">
-              <div className="flex items-center gap-2 text-slate-400 mb-4 font-bold uppercase text-[10px] tracking-widest"><AlignLeft size={16} /> {t.taskDescriptionLabel}</div>
-              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{task.description || t.noDescriptionText}</p>
-            </div>
-          </div>
-
-          <div className="lg:col-span-4 flex flex-col bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden">
-            <div className="p-4 border-b dark:border-slate-700 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-[10px] font-bold uppercase tracking-wider dark:text-white">{t.subtasksListTitle}</h3>
-              <span className="text-[10px] bg-primary-500 text-white px-2 py-0.5 rounded font-bold">{totalCount}</span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-2">
-              {task.subtasks && task.subtasks.length > 0 ? (
-                task.subtasks.map((st, idx) => (
-                  <button key={st.id || idx} onClick={() => toggleSubtask(task.id, st.id)} disabled={isActionLoading}
-                    className={`w-full flex items-start gap-3 p-3.5 rounded-[0.7rem] border transition-all text-left group disabled:opacity-70 ${st.done ? 'bg-green-50/30 dark:bg-green-900/5 border-green-100 dark:border-green-900/20' : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-primary-300 shadow-sm'}`}
-                  >
-                    <div className={`mt-0.5 flex-shrink-0 transition-all ${st.done ? 'text-green-500' : 'text-slate-300 dark:text-slate-600'}`}>{st.done ? <CheckCircle2 size={18} /> : <Circle size={18} />}</div>
-                    <span className={`text-[12px] font-bold leading-tight break-words flex-1 ${st.done ? 'line-through text-slate-400 font-medium' : 'text-slate-700 dark:text-slate-200'}`}>{st.text}</span>
-                  </button>
-                ))
               ) : (
-                <div className="text-center py-10 space-y-4">
-                  <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto opacity-30">
-                    <Layers size={32} className="text-slate-400" />
-                  </div>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest px-4">{t.noSubtasksText}</p>
-
-                  {task.status !== 'review' && task.status !== 'done' && (
-                    <button
-                      onClick={() => moveTask(task.id, 'review')}
-                      disabled={isActionLoading}
-                      className="w-full bg-primary-500 hover:bg-primary-600 text-white font-black py-4 px-4 rounded-[0.7rem] text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg shadow-primary-500/20 active:scale-95 mt-4 disabled:opacity-50"
-                    >
-                      {isActionLoading ? t.loadingText : t.finishTask}
-                    </button>
-                  )}
+                <div className="text-center py-8 text-slate-400 text-xs">
+                  <Paperclip size={24} className="mx-auto mb-1.5 opacity-40" />
+                  <p>{t.noFilesText || "Biriktirilgan fayllar mavjud emas"}</p>
                 </div>
               )}
             </div>
+
           </div>
+
+          {/* Right Column: Subtasks List */}
+          <div className="lg:col-span-4">
+            <div className="card overflow-hidden">
+              <div className="p-4 px-5 border-b border-slate-200/70 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/40">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-white">
+                  {t.subtasksListTitle || "Qism vazifalar (Checklist)"}
+                </h3>
+                <span className="text-xs font-extrabold bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 px-2 py-0.5 rounded-full border border-primary-200/50 dark:border-primary-800/50">
+                  {doneCount}/{totalCount}
+                </span>
+              </div>
+
+              <div className="p-4 space-y-2">
+                {task.subtasks && task.subtasks.length > 0 ? (
+                  task.subtasks.map((st, idx) => (
+                    <button 
+                      key={st.id || idx} 
+                      onClick={() => toggleSubtask(task.id, st.id)} 
+                      disabled={isActionLoading}
+                      className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left ${
+                        st.done 
+                          ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-300' 
+                          : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-primary-300 text-slate-700 dark:text-slate-200'
+                      }`}
+                    >
+                      <div className={`mt-0.5 flex-shrink-0 ${st.done ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'}`}>
+                        {st.done ? <CheckCircle2 size={17} /> : <Circle size={17} />}
+                      </div>
+                      <span className={`text-xs font-medium leading-relaxed flex-1 ${st.done ? 'line-through opacity-75' : ''}`}>
+                        {st.text}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-10 text-slate-400 text-xs">
+                    <Layers size={28} className="mx-auto mb-2 opacity-40" />
+                    <p>{t.noSubtasksText || "Qism vazifalar mavjud emas"}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
         </div>
+
       </div>
 
       {/* MODALS SECTION */}
       {showNoPerm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowNoPerm(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <ShieldAlert className="text-amber-500 mx-auto mb-4" size={40} />
-            <h3 className="text-lg font-bold dark:text-white mb-2">{t.noPermissionTitle}</h3>
-            <p className="text-sm text-slate-500 mb-6 leading-relaxed">{t.noPermissionMsg}</p>
-            <button onClick={() => setShowNoPerm(false)} className="btn-primary w-full py-3 font-bold uppercase">{t.understood}</button>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowNoPerm(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 max-w-sm w-full text-center border border-slate-200 dark:border-slate-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-900/40">
+              <ShieldAlert size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{t.noPermissionTitle || "Ruxsat yo'q"}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">{t.noPermissionMsg || "Ushbu amalni bajarish uchun sizda yetarli ruxsat yo'q."}</p>
+            <button onClick={() => setShowNoPerm(false)} className="btn-primary w-full py-2.5 text-xs font-bold">{t.understood || "Tushunarli"}</button>
           </div>
         </div>
       )}
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-[0.7rem] p-8 max-w-sm w-full text-center border border-slate-200 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <Trash2 className="text-red-500 mx-auto mb-4" size={40} />
-            <h3 className="text-lg font-bold dark:text-white mb-2">{t.deleteConfirmTitle}</h3>
-            <p className="text-sm text-slate-500 mb-8 italic">{t.deleteConfirmMsg}</p>
-            <div className="flex gap-3"><button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary flex-1 py-3">{t.no}</button><button onClick={confirmDelete} className="btn-danger flex-1 py-3 font-bold">{t.yesDelete}</button></div>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 max-w-sm w-full text-center border border-slate-200 dark:border-slate-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-900/40">
+              <Trash2 size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{t.deleteConfirmTitle || "Vazifani o'chirish"}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">{t.deleteConfirmMsg || "Haqiqatan ham ushbu vazifani o'chirmoqchimisiz?"}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary flex-1 py-2.5 text-xs font-bold">{t.no || "Bekor qilish"}</button>
+              <button onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl flex-1 py-2.5 text-xs transition-colors shadow-xs">{t.yesDelete || "O'chirish"}</button>
+            </div>
           </div>
         </div>
       )}
 
-      {showEditModal && <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[9999]"><TaskModal task={task} onClose={() => setShowEditModal(false)} /></div>}
+      {showEditModal && <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[9999]"><TaskModal task={task} onClose={() => setShowEditModal(false)} /></div>}
       {zoomImage && (
-        <div className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-10 animate-fade-in" onClick={() => setZoomImage(null)}>
-          <button className="absolute top-8 right-8 text-white hover:rotate-90 transition-all"><X size={32} /></button>
-          <img src={zoomImage} className="max-w-full max-h-full rounded-[0.7rem] border border-white/10" alt="zoom" />
+        <div className="fixed inset-0 bg-slate-950/90 z-[9999] flex items-center justify-center p-8 animate-fade-in" onClick={() => setZoomImage(null)}>
+          <button className="absolute top-6 right-6 text-white/80 hover:text-white transition-colors p-2"><X size={28} /></button>
+          <img src={zoomImage} className="max-w-full max-h-[85vh] rounded-2xl border border-slate-700 shadow-2xl object-contain" alt="zoom" />
         </div>
       )}
 
       {previewFile && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[9999] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 w-full max-w-6xl h-[90vh] rounded-[0.7rem] flex flex-col overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b dark:border-slate-700 text-slate-900 dark:text-white">
-              <div className="flex items-center gap-3 truncate max-w-[50%]"><FileText className="text-primary-500" size={20} /><span className="text-sm font-bold truncate">{previewFile.name}</span></div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => setIframeKey(k => k + 1)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all" title={t.refresh}><RefreshCw size={18} /></button>
-                <a href={previewFile.url} download target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md"><Download size={14} /> {t.download}</a>
-                <button onClick={() => setPreviewFile(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-all"><X size={20} /></button>
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-[9999] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[85vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between p-4 px-5 border-b border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+              <div className="flex items-center gap-3 truncate max-w-[60%]">
+                <FileText className="text-primary-600 dark:text-primary-400" size={20} />
+                <span className="text-sm font-bold truncate">{previewFile.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setIframeKey(k => k + 1)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 transition-colors" title={t.refresh}>
+                  <RefreshCw size={16} />
+                </button>
+                <a href={previewFile.url} download target="_blank" rel="noreferrer" className="btn-primary py-2 px-3 text-xs font-bold">
+                  <Download size={14} /> <span>{t.download || "Yuklab olish"}</span>
+                </a>
+                <button onClick={() => setPreviewFile(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 transition-colors">
+                  <X size={18} />
+                </button>
               </div>
             </div>
-            <div className="flex-1 bg-slate-100 dark:bg-slate-900"><iframe key={iframeKey} src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewFile.url)}&embedded=true`} className="w-full h-full border-none" title="viewer" /></div>
+            <div className="flex-1 bg-slate-100 dark:bg-slate-950">
+              <iframe key={iframeKey} src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewFile.url)}&embedded=true`} className="w-full h-full border-none" title="viewer" />
+            </div>
           </div>
         </div>
       )}

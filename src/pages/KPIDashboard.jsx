@@ -1,56 +1,69 @@
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
-import { Rocket, Clock, Construction } from 'lucide-react';
+import { Wallet, Sparkles, ArrowLeft, Clock } from 'lucide-react';
 
 export default function KPIDashboard() {
   const { language } = useApp();
+  const navigate = useNavigate();
 
-  const content = {
-    uz: {
-      title: "KPI Tizimi",
-      status: "Tez orada...",
-      desc: "Xodimlarni rag'batlantirish va KPI ko'rsatkichlarini hisoblash bo'limi hozirda ishlab chiqilmoqda."
-    },
-    ru: {
-      title: "Система KPI",
-      status: "Скоро...",
-      desc: "Раздел поощрения сотрудников и расчета показателей KPI находится в разработке."
-    }
-  }[language || 'uz'];
+  const isUz = language === 'uz';
 
   return (
-    <div className="h-[80vh] flex flex-col items-center justify-center text-center px-4 animate-in fade-in duration-700">
-      
-      {/* Visual Icon */}
-      <div className="relative mb-8">
-        <div className="w-32 h-32 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center animate-pulse">
-           <Rocket size={60} className="text-primary-500" />
+    <div className="max-w-4xl mx-auto py-8 sm:py-16 px-4 animate-fade-in text-center">
+      <div className="card p-8 sm:p-14 flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Dekorativ fon nurlari */}
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Ikonka */}
+        <div className="relative mb-6">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-primary-500 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-primary-500/20 ring-8 ring-primary-50 dark:ring-primary-950/40">
+            <Wallet className="w-10 h-10 sm:w-12 sm:h-12" />
+          </div>
+          <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shadow-md animate-bounce">
+            <Sparkles size={16} />
+          </div>
         </div>
-        <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl shadow-lg flex items-center justify-center border border-slate-100 dark:border-slate-700">
-           <Construction size={24} className="text-amber-500" />
+
+        {/* Skoro Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase tracking-wider mb-4">
+          <Clock size={13} />
+          <span>{isUz ? "Tez kunda" : "Скоро"}</span>
+        </div>
+
+        {/* Sarlavha va Tavsif */}
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight max-w-lg mb-3">
+          {isUz ? "KPI moduli tez orada ishga tushadi" : "Модуль KPI скоро будет доступен"}
+        </h1>
+
+        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed mb-8">
+          {isUz 
+            ? "Xodimlarning samaradorlik ko'rsatkichlari, avtomatlashtirilgan oylik baholash va KPI hisob-kitob moduli ishlab chiqilmoqda." 
+            : "Модуль показателей эффективности сотрудников, автоматической ежемесячной оценки и расчета KPI находится в разработке."}
+        </p>
+
+        {/* Qo'shimcha holat ko'rsatkichi */}
+        <div className="w-full max-w-xs bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden mb-8">
+          <div className="bg-gradient-to-r from-primary-500 to-amber-500 h-full w-[70%] rounded-full animate-pulse" />
+        </div>
+
+        {/* Qaytish tugmasi */}
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => navigate('/')}
+            className="btn-secondary py-2.5 px-5 text-xs font-bold flex items-center gap-2"
+          >
+            <ArrowLeft size={15} />
+            <span>{isUz ? "Bosh sahifaga qaytish" : "Вернуться на главную"}</span>
+          </button>
+          <button
+            onClick={() => navigate('/tasks')}
+            className="btn-primary py-2.5 px-5 text-xs font-bold"
+          >
+            <span>{isUz ? "Vazifalar ro'yxatiga o'tish" : "Перейти к задачам"}</span>
+          </button>
         </div>
       </div>
-
-      {/* Text Content */}
-      <h1 className="text-4xl font-black text-slate-800 dark:text-white mb-4 tracking-tight">
-        {content.title}
-      </h1>
-      
-      <div className="inline-flex items-center gap-2 px-6 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-full border border-amber-100 dark:border-amber-900/30 mb-6">
-        <Clock size={18} className="animate-spin-slow" />
-        <span className="font-black uppercase tracking-widest text-sm">{content.status}</span>
-      </div>
-
-      <p className="max-w-md text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-        {content.desc}
-      </p>
-
-      {/* Decorative dots */}
-      <div className="mt-12 flex gap-2">
-        <div className="w-2 h-2 rounded-full bg-primary-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-2 h-2 rounded-full bg-primary-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-2 h-2 rounded-full bg-primary-300 animate-bounce" style={{ animationDelay: '300ms' }} />
-      </div>
-
     </div>
   );
 }

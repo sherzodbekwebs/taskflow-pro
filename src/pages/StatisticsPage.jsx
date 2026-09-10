@@ -13,8 +13,6 @@ export default function StatisticsPage() {
   const { tasks, users, t, language } = useApp();
   const [zoomImage, setZoomImage] = useState(null); // Rasmni kattalashtirish uchun state
 
-  if (!t) return null;
-
   // 1. Reyting bo'yicha Leaderboard
   const ratingLeaderboard = useMemo(() => {
     return users
@@ -54,90 +52,165 @@ export default function StatisticsPage() {
     return (rated.reduce((sum, task) => sum + Number(task.rating), 0) / rated.length).toFixed(1);
   }, [tasks]);
 
-  const getRankStyles = (index) => {
-    switch (index) {
-      case 0: return "bg-amber-50 dark:bg-amber-900/20 border-amber-300 ring-2 ring-amber-400/30";
-      case 1: return "bg-slate-50 dark:bg-slate-800/60 border-slate-300 ring-2 ring-slate-400/20";
-      case 2: return "bg-orange-50 dark:bg-orange-900/20 border-orange-300 ring-2 ring-orange-400/20";
-      default: return "bg-white dark:bg-slate-900/40 border-slate-100 dark:border-slate-800";
-    }
-  };
+  if (!t) return null;
 
   return (
-    <div className="space-y-6 pb-10 animate-in fade-in duration-500 max-w-[1600px] mx-auto text-slate-800 dark:text-slate-200 px-4">
+    <div className="space-y-6 pb-12 animate-fade-in max-w-7xl mx-auto text-slate-800 dark:text-slate-200">
+
+      {/* Top summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {language === 'uz' ? "O'rtacha baho" : "Средняя оценка"}
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center">
+              <Star fill="currentColor" size={16} />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{overallAvgRating}</span>
+            <span className="text-xs font-semibold text-slate-400">/ 5.0</span>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-1">{language === 'uz' ? "Bajarilgan vazifalar bo'yicha" : "По выполненным задачам"}</p>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {language === 'uz' ? "Tugallangan" : "Завершено"}
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+              <CheckCircle size={16} />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {tasks.filter(t => t.status === 'done').length}
+            </span>
+            <span className="text-xs font-semibold text-emerald-600">vazifa</span>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-1">{language === 'uz' ? "Muvaffaqiyatli topshirilgan" : "Успешно сдано"}</p>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {language === 'uz' ? "Faol xodimlar" : "Активные сотрудники"}
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-950/40 text-primary-600 flex items-center justify-center">
+              <ListTodo size={16} />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-extrabold text-slate-900 dark:text-white">{users.length}</span>
+            <span className="text-xs font-semibold text-slate-400">nafar</span>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-1">{language === 'uz' ? "Tizim foydalanuvchilari" : "Пользователи системы"}</p>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {language === 'uz' ? "Yetakchi xodim" : "Лидер"}
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center">
+              <Crown size={16} />
+            </div>
+          </div>
+          <div className="mt-2 truncate">
+            <span className="text-base font-extrabold text-slate-900 dark:text-white truncate block">
+              {ratingLeaderboard[0]?.name || "—"}
+            </span>
+          </div>
+          <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-1">
+            {ratingLeaderboard[0]?.avg ? `★ ${ratingLeaderboard[0].avg} ball bilan yetakchi` : "Reyting hisoblanmoqda"}
+          </p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
         {/* REYTING BLOKI (CHAP) */}
         <div className="lg:col-span-6 flex flex-col">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 shadow-sm border border-slate-100 dark:border-slate-700 min-h-[500px] flex flex-col h-full">
-            <div className="flex items-center justify-between mb-8 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-xl flex items-center justify-center shadow-sm">
-                  <Star fill="currentColor" size={22} />
+          <div className="card p-6 flex flex-col h-full">
+            <div className="flex items-center justify-between mb-6 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-xl flex items-center justify-center">
+                  <Star fill="currentColor" size={18} />
                 </div>
-                <h3 className="text-xl font-black uppercase tracking-tight">
-                  {language === 'uz' ? "BAXOLASH REYTINGI" : "РЕЙТИНГ ОЦЕНОК"}
-                </h3>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
-                <p className="text-[10px] font-black text-slate-400 uppercase mb-0.5">{language === 'uz' ? "O'RTACHA" : "СРЕДНИЙ"}</p>
-                <p className="text-2xl font-black text-amber-500">{overallAvgRating} <span className="text-xs text-slate-300">/ 5</span></p>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    {language === 'uz' ? "Baholash reytingi" : "Рейтинг сотрудников"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {language === 'uz' ? "Bajarilgan vazifalar bo'yicha baholar" : "Оценки по завершенным задачам"}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <div className="space-y-2.5 flex-1 overflow-y-auto pr-1 custom-scrollbar">
               {ratingLeaderboard.length > 0 ? (
                 ratingLeaderboard.map((u, idx) => (
-                  <div key={u.id} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${getRankStyles(idx)}`}>
-                    <div className="flex items-center gap-4">
+                  <div 
+                    key={u.id} 
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/70 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-800/80 transition-all shadow-2xs"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
                       {/* RANK RAQAMI */}
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-base relative shadow-sm shrink-0 ${idx === 0 ? 'bg-amber-400 text-white ring-2 ring-white ring-offset-2 ring-offset-amber-400' :
-                          idx === 1 ? 'bg-slate-400 text-white ring-2 ring-white ring-offset-2 ring-offset-slate-400' :
-                            idx === 2 ? 'bg-orange-400 text-white ring-2 ring-white ring-offset-2 ring-offset-orange-400' :
-                              'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200'
-                        }`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0 ${
+                        idx === 0 ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800' :
+                        idx === 1 ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300' :
+                        idx === 2 ? 'bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-800' :
+                        'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                      }`}>
                         {idx + 1}
-                        {idx < 3 && <div className="absolute -top-2.5 -right-2.5 drop-shadow-md">
-                          {idx === 0 ? <Crown size={18} className="text-amber-500" /> : <Medal size={18} className={idx === 1 ? "text-slate-400" : "text-orange-500"} />}
-                        </div>}
                       </div>
 
-                      {/* USER AVATAR (Ustiga bosilganda zoom bo'ladi) */}
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div 
-                          className={`w-10 h-10 rounded-full overflow-hidden bg-slate-100 border-2 border-white shrink-0 shadow-sm transition-transform active:scale-95 ${u.avatar ? 'cursor-zoom-in hover:border-primary-400' : ''}`}
-                          onClick={() => u.avatar && setZoomImage(u.avatar)}
-                        >
-                           {u.avatar ? (
-                             <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
-                           ) : (
-                             <div className="w-full h-full flex items-center justify-center bg-indigo-500 text-white text-xs font-bold">
-                               {u.name.charAt(0).toUpperCase()}
-                             </div>
-                           )}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-[16px] truncate text-slate-800 dark:text-slate-100">
-                            {u.name}
-                          </h4>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{u.count} {language === 'uz' ? "VAZIFA" : "ЗАДАЧ"}</p>
-                        </div>
+                      {/* USER AVATAR */}
+                      <div 
+                        className={`w-9 h-9 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shrink-0 ${u.avatar ? 'cursor-zoom-in' : ''}`}
+                        onClick={() => u.avatar && setZoomImage(u.avatar)}
+                      >
+                         {u.avatar ? (
+                           <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+                         ) : (
+                           <div className="w-full h-full flex items-center justify-center bg-primary-100 dark:bg-primary-950 text-primary-600 dark:text-primary-400 text-xs font-bold">
+                             {u.name.charAt(0).toUpperCase()}
+                           </div>
+                         )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-xs sm:text-sm truncate text-slate-900 dark:text-slate-100">
+                          {u.name}
+                        </h4>
+                        <p className="text-[11px] text-slate-400">
+                          {u.count} {language === 'uz' ? "ta baholangan vazifa" : "оцененных задач"}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                       <div className="hidden sm:flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} fill={u.avg >= s ? "#f59e0b" : "none"} stroke={u.avg >= s ? "#f59e0b" : "#cbd5e1"} />)}
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star 
+                            key={s} 
+                            size={13} 
+                            fill={u.avg >= s ? "#f59e0b" : "none"} 
+                            className={u.avg >= s ? "text-amber-500" : "text-slate-300 dark:text-slate-600"} 
+                          />
+                        ))}
                       </div>
-                      <span className={`text-2xl font-black w-12 text-right ${idx === 0 ? 'text-amber-500' : 'text-slate-700 dark:text-white'}`}>{u.avg}</span>
+                      <span className="text-base font-extrabold text-amber-500 w-10 text-right">{u.avg}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="h-full flex flex-col items-center justify-center py-20 text-slate-300 dark:text-slate-600 italic">
-                  <Star size={48} className="mb-4 opacity-10" />
-                  <p className="text-sm font-bold uppercase tracking-widest opacity-40">{language === 'uz' ? "Ma'lumot mavjud emas" : "НЕТ ДАННЫХ"}</p>
+                <div className="h-full flex flex-col items-center justify-center py-16 text-slate-400 text-xs">
+                  <Star size={36} className="mb-2 opacity-30 text-slate-400" />
+                  <p>{language === 'uz' ? "Hozircha baholangan vazifalar mavjud emas" : "Нет данных"}</p>
                 </div>
               )}
             </div>
@@ -146,35 +219,45 @@ export default function StatisticsPage() {
 
         {/* VAZIFALAR SONI BLOKI (O'NG) */}
         <div className="lg:col-span-6 flex flex-col">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 shadow-sm border border-slate-100 dark:border-slate-700 min-h-[500px] flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-10 shrink-0">
-              <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-xl flex items-center justify-center shadow-sm">
-                <CheckCircle size={22} />
+          <div className="card p-6 flex flex-col h-full">
+            <div className="flex items-center gap-2.5 mb-6 shrink-0">
+              <div className="w-9 h-9 bg-primary-50 dark:bg-primary-950/40 text-primary-600 rounded-xl flex items-center justify-center">
+                <CheckCircle size={18} />
               </div>
-              <h3 className="text-xl font-black uppercase tracking-tight">{language === 'uz' ? "VAZIFALAR SONI" : "КОЛ-ВО ЗАДАЧ"}</h3>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  {language === 'uz' ? "Vazifalar soni bo'yicha yuklama" : "Количество задач по сотрудникам"}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {language === 'uz' ? "Eng ko'p vazifa berilgan xodimlar" : "Нагрузка на сотрудников"}
+                </p>
+              </div>
             </div>
 
-            <div className="flex-1 w-full h-full min-h-[360px]">
+            <div className="flex-1 w-full min-h-[340px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={userData} layout="vertical" margin={{ left: 10, right: 60, top: 10, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                <BarChart data={userData} layout="vertical" margin={{ left: 10, right: 40, top: 10, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(148, 163, 184, 0.15)" />
                   <XAxis type="number" hide />
                   <YAxis
                     dataKey="name"
                     type="category"
                     axisLine={false}
                     tickLine={false}
-                    width={140}
-                    tick={{ fontSize: 14, fontWeight: 700, fill: '#475569' }}
+                    width={120}
+                    tick={{ fontSize: 12, fontWeight: 600, fill: '#64748b' }}
                   />
-                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: 'none', fontSize: '12px', fontWeight: 'bold' }} />
-                  <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={28}>
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }} 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', fontSize: '12px', fontWeight: 'bold' }} 
+                  />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={22}>
                     {userData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                     <LabelList
                       dataKey="value"
                       position="right"
-                      offset={15}
-                      style={{ fontSize: '16px', fontWeight: '900', fill: '#4f46e5' }}
+                      offset={12}
+                      style={{ fontSize: '13px', fontWeight: '800', fill: '#0ea5e9' }}
                     />
                   </Bar>
                 </BarChart>
@@ -185,34 +268,45 @@ export default function StatisticsPage() {
       </div>
 
       {/* --- OXIRGI NATIJALAR --- */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mt-2">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-slate-50 dark:bg-slate-900 text-slate-500 rounded-xl flex items-center justify-center shadow-sm">
-            <ListTodo size={22} />
+      <div className="card p-6">
+        <div className="flex items-center gap-2.5 mb-5">
+          <div className="w-9 h-9 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl flex items-center justify-center">
+            <ListTodo size={18} />
           </div>
-          <h3 className="text-xl font-black uppercase tracking-tight">{language === 'uz' ? "OXIRGI NATIJALAR" : "ПОСЛЕДНИЕ РЕЗУЛЬТАТЫ"}</h3>
+          <div>
+            <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {language === 'uz' ? "Oxirgi topshirilgan natijalar" : "Последние результаты"}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {language === 'uz' ? "Muvaffaqiyatli yakunlangan so'nggi vazifalar" : "Недавно завершенные задачи"}
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {tasks.filter(t => t.status === 'done').slice(0, 4).map((task, i) => {
             const assigned = users.find(u => String(u.id) === String(task.assignedUser));
             return (
-              <div key={i} className="p-6 rounded-2xl bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 transition-all shadow-none hover:shadow-md group">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="px-2.5 py-1 bg-green-500 text-white text-[9px] font-black uppercase rounded-lg tracking-widest shadow-sm">DONE</span>
-                  {task.rating > 0 && (
-                    <div className="flex items-center gap-1 text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-xl border border-amber-100">
-                      <span className="text-[12px] font-black">{task.rating}</span>
-                      <Star size={10} fill="currentColor" />
-                    </div>
-                  )}
-                </div>
-                <h4 className="text-[14px] font-black mb-5 line-clamp-2 leading-tight dark:text-white min-h-[40px] group-hover:text-indigo-600 transition-colors">{task.title}</h4>
-                <div className="flex items-center gap-3 border-t border-slate-100 dark:border-slate-800 pt-4 mt-auto">
-                  <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-[11px] text-white font-black shadow-inner">
-                    {assigned?.fullName?.[0] || 'U'}
+              <div key={i} className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/70 dark:border-slate-800 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div>
+                  <div className="flex justify-between items-center mb-2.5">
+                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 text-[10px] font-bold uppercase rounded-md tracking-wider">
+                      Done
+                    </span>
+                    {task.rating > 0 && (
+                      <div className="flex items-center gap-1 text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/40">
+                        <span className="text-xs font-extrabold">{task.rating}</span>
+                        <Star size={10} fill="currentColor" />
+                      </div>
+                    )}
                   </div>
-                  <p className="text-[12px] font-bold text-slate-500 dark:text-slate-400 truncate">{assigned?.fullName || 'Staff'}</p>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug mb-4">{task.title}</h4>
+                </div>
+                <div className="flex items-center gap-2.5 pt-3 border-t border-slate-200/60 dark:border-slate-800">
+                  <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-950 flex items-center justify-center text-[10px] text-primary-600 dark:text-primary-400 font-bold">
+                    {assigned?.fullName?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate">{assigned?.fullName || 'Xodim'}</span>
                 </div>
               </div>
             );
@@ -220,23 +314,23 @@ export default function StatisticsPage() {
         </div>
       </div>
 
-      {/* RASMNI KATTA QILIB KO'RSATADIGAN MODAL (IMAGE ZOOM) */}
+      {/* IMAGE ZOOM MODAL */}
       {zoomImage && (
         <div 
-          className="fixed inset-0 bg-black/90 backdrop-blur-md z-[300] flex items-center justify-center p-4 animate-in fade-in duration-300"
+          className="fixed inset-0 bg-slate-950/90 z-[300] flex items-center justify-center p-6 animate-fade-in"
           onClick={() => setZoomImage(null)}
         >
           <button 
-            className="absolute top-10 right-10 text-white p-3 hover:bg-white/10 rounded-full transition-all"
+            className="absolute top-6 right-6 text-white/80 hover:text-white p-2 transition-colors"
             onClick={() => setZoomImage(null)}
           >
-            <X size={40} />
+            <X size={28} />
           </button>
           <img 
             src={zoomImage} 
             alt="Zoomed Avatar" 
-            className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain animate-in zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()} // Rasm ustiga bosganda modal yopilmasligi uchun
+            className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}

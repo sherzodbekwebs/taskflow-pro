@@ -1,0 +1,8 @@
+{
+  "name": "Task Flow",
+  "description": "Task and project management application with Kanban board, KPIs, interactive calendar, and team workflow management",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -9,6 +9,7 @@ import StatisticsPage from './pages/StatisticsPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
 import TaskDetailPage from './pages/TaskDetailPage';
+import CalendarPage from './pages/CalendarPage';
 import CallCenterPage from './pages/CallCenterPage';
 
 import { Loader2 } from 'lucide-react';
@@ -53,12 +54,12 @@ function AppRoutes() {
           <Route index element={<DashboardPage />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="tasks/:id" element={<TaskDetailPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="/kpi" element={<KPIDashboard />} />
-
           {/* <Route path="/call-center" element={<CallCenterPage />} /> */}
         </Route>
 

@@ -110,67 +110,79 @@ export default function TaskModal({ task, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] w-full max-w-6xl max-h-[92vh] flex flex-col border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[120] flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         
         {/* HEADER */}
-        <div className="flex items-center justify-between px-8 py-5 border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900">
+        <div className="flex items-center justify-between px-6 py-4.5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900">
           <div>
-            <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-tight">
-              {isEdit ? t.editTask : t.addTask}
+            <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
+              {isEdit ? (t.editTask || "Vazifani tahrirlash") : (t.addTask || "Yangi vazifa qo'shish")}
             </h2>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-              {isEdit ? t.editTaskSubtitle : t.addTaskSubtitle}
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {isEdit ? (t.editTaskSubtitle || "Vazifa ma'lumotlarini o'zgartirish") : (t.addTaskSubtitle || "Barcha kerakli ma'lumotlarni kiriting")}
             </p>
           </div>
-          <button onClick={() => onClose(false)} className="p-2.5 rounded-xl hover:bg-red-50 hover:text-red-500 text-slate-400 transition-all">
-            <X size={24} />
+          <button 
+            onClick={() => onClose(false)} 
+            className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+          >
+            <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar bg-white dark:bg-slate-900">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar bg-white dark:bg-slate-900 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            {/* LEFT SIDE */}
-            <div className="lg:col-span-7 space-y-8">
+            {/* LEFT SIDE: Core details */}
+            <div className="lg:col-span-7 space-y-5">
               {/* Task Title */}
               <div>
-                <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 block">{t.taskTitle} *</label>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">
+                  {t.taskTitle || "Vazifa nomi"} *
+                </label>
                 <input 
-                  className="w-full bg-slate-50 dark:bg-slate-800 border-none text-base font-bold py-4 px-6 rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all dark:text-white placeholder:text-slate-400" 
+                  className="input font-semibold text-sm h-11" 
                   value={form.title} 
                   onChange={e => set('title', e.target.value)} 
-                  placeholder={t.taskTitlePlaceholder}
+                  placeholder={t.taskTitlePlaceholder || "Masalan: Oylik hisobotni topshirish"}
                   required 
                 />
               </div>
 
               {/* Recurring Section */}
-              <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 space-y-4">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <RefreshCw size={20} className={form.is_recurring ? 'text-primary-500 animate-spin-slow' : 'text-slate-400'} />
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{t.recurringTask}</p>
+                  <div className="flex items-center gap-2.5">
+                    <RefreshCw size={17} className={form.is_recurring ? 'text-primary-600 animate-spin-slow' : 'text-slate-400'} />
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                      {t.recurringTask || "Takrorlanuvchi vazifa"}
+                    </span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={form.is_recurring} onChange={e => {
-                      set('is_recurring', e.target.checked);
-                      if (e.target.checked && form.recurring_type === 'none') set('recurring_type', 'daily');
-                    }} />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={form.is_recurring} 
+                      onChange={e => {
+                        set('is_recurring', e.target.checked);
+                        if (e.target.checked && form.recurring_type === 'none') set('recurring_type', 'daily');
+                      }} 
+                    />
+                    <div className="w-10 h-5.5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-primary-600"></div>
                   </label>
                 </div>
 
                 {form.is_recurring && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 animate-in slide-in-from-top-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-primary-600 uppercase tracking-wide">{t.period}</label>
-                      <select className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 h-11 text-xs font-bold rounded-xl shadow-sm" value={form.recurring_type} onChange={e => set('recurring_type', e.target.value)}>
-                        <option value="daily">{t.daily}</option>
-                        <option value="weekly">{t.weekly}</option>
-                        <option value="monthly">{t.monthly}</option>
-                        <option value="quarterly">{t.quarterly}</option>
-                        <option value="yearly">{t.yearly}</option>
+                      <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">{t.period || "Davriyligi"}</label>
+                      <select className="input h-9 text-xs font-semibold" value={form.recurring_type} onChange={e => set('recurring_type', e.target.value)}>
+                        <option value="daily">{t.daily || "Har kuni"}</option>
+                        <option value="weekly">{t.weekly || "Har hafta"}</option>
+                        <option value="monthly">{t.monthly || "Har oy"}</option>
+                        <option value="quarterly">{t.quarterly || "Har chorak"}</option>
+                        <option value="yearly">{t.yearly || "Har yil"}</option>
                       </select>
                     </div>
                   </div>
@@ -179,104 +191,147 @@ export default function TaskModal({ task, onClose }) {
 
               {/* Description */}
               <div>
-                <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2"><AlignLeft size={14} /> {t.detailedDescription}</label>
-                <textarea className="w-full bg-slate-50 dark:bg-slate-800 border-none min-h-[200px] py-4 px-6 rounded-2xl focus:ring-2 focus:ring-primary-500 transition-all dark:text-white text-sm leading-relaxed" value={form.description} onChange={e => set('description', e.target.value)} placeholder={t.descriptionPlaceholder} />
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <AlignLeft size={14} className="text-slate-400" /> 
+                  <span>{t.detailedDescription || "Batafsil tavsif"}</span>
+                </label>
+                <textarea 
+                  className="input min-h-[140px] py-3 text-xs leading-relaxed" 
+                  value={form.description} 
+                  onChange={e => set('description', e.target.value)} 
+                  placeholder={t.descriptionPlaceholder || "Vazifa bo'yicha qo'shimcha ko'rsatmalar..."} 
+                />
               </div>
 
               {/* Files */}
-              <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[1.5rem] border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-4">
-                  <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t.taskFiles}</label>
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black bg-primary-500 text-white px-4 py-2 rounded-xl hover:bg-primary-600 transition-all uppercase tracking-tighter">{t.add}</button>
+              <div className="bg-slate-50 dark:bg-slate-800/40 p-4.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">{t.taskFiles || "Biriktirilgan fayllar"}</label>
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()} 
+                    className="text-xs font-bold bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800/60 px-3 py-1 rounded-lg hover:bg-primary-100 transition-colors flex items-center gap-1"
+                  >
+                    <Plus size={13} />
+                    <span>{t.add || "Fayl qo'shish"}</span>
+                  </button>
                 </div>
                 <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileAdd} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {form.files.map(f => (
-                    <div key={f.id} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm group transition-all">
-                      <FileText size={18} className="text-primary-500" />
-                      <span className="text-[11px] font-bold truncate flex-1 dark:text-slate-300">{f.name}</span>
-                      <button type="button" onClick={() => set('files', form.files.filter(file => file.id !== f.id))} className="text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
-                    </div>
-                  ))}
-                </div>
+                
+                {form.files.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {form.files.map(f => (
+                      <div key={f.id} className="flex items-center gap-2.5 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/70 dark:border-slate-800 shadow-2xs group">
+                        <FileText size={16} className="text-primary-500 shrink-0" />
+                        <span className="text-xs font-medium truncate flex-1 text-slate-700 dark:text-slate-300">{f.name}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => set('files', form.files.filter(file => file.id !== f.id))} 
+                          className="text-slate-400 hover:text-rose-500 transition-colors p-1"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">Hali fayllar biriktirilmagan</p>
+                )}
               </div>
             </div>
 
-            {/* RIGHT SIDE (SIDEBAR) */}
-            <div className="lg:col-span-5 space-y-8">
-              <div className="bg-slate-50 dark:bg-slate-800/80 p-7 rounded-[2rem] border border-slate-100 dark:border-slate-800 space-y-6 shadow-sm">
+            {/* RIGHT SIDE: Meta attributes & Subtasks */}
+            <div className="lg:col-span-5 space-y-5">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-4">
                 
                 {/* Status */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.status}</label>
-                  <select className="w-full bg-white dark:bg-slate-900 border-none h-12 text-sm font-black rounded-xl shadow-sm dark:text-white px-4" value={form.status} onChange={e => set('status', e.target.value)}>
-                    <option value="new">{t.statusNew}</option>
-                    <option value="progress">{t.statusProgress}</option>
-                    <option value="review">{t.statusReview}</option>
-                    <option value="done">{t.statusDone}</option>
+                <div>
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 block">{t.status || "Holati"}</label>
+                  <select className="input h-10 text-xs font-semibold" value={form.status} onChange={e => set('status', e.target.value)}>
+                    <option value="new">{t.statusNew || "Yangi"}</option>
+                    <option value="progress">{t.statusProgress || "Jarayonda"}</option>
+                    <option value="review">{t.statusReview || "Tekshiruvda"}</option>
+                    <option value="done">{t.statusDone || "Tugallangan"}</option>
                   </select>
                 </div>
 
-                {/* Dates (Yonma-yon) */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Calendar size={13} /> {t.createdDate}</label>
-                    <input type="date" className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-3" value={form.created_at} onChange={e => set('created_at', e.target.value)} />
+                {/* Dates */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                      <Calendar size={12} /> <span>{t.createdDate || "Yaratilgan"}</span>
+                    </label>
+                    <input type="date" className="input h-9.5 text-xs" value={form.created_at} onChange={e => set('created_at', e.target.value)} />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5"><Clock size={13} /> {t.deadlineDate}</label>
-                    <input type="date" className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-3" value={form.deadline} onChange={e => set('deadline', e.target.value)} />
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                      <Clock size={12} /> <span>{t.deadlineDate || "Muddat"}</span>
+                    </label>
+                    <input type="date" className="input h-9.5 text-xs" value={form.deadline} onChange={e => set('deadline', e.target.value)} />
                   </div>
                 </div>
 
                 {/* Department */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.department}</label>
-                  <select className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-4" value={form.department} onChange={e => set('department', e.target.value)}>
-                    <option value="">{t.none}</option>
+                <div>
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 block">{t.department || "Bo'lim"}</label>
+                  <select className="input h-10 text-xs font-medium" value={form.department} onChange={e => set('department', e.target.value)}>
+                    <option value="">{t.none || "Tanlanmagan"}</option>
                     {departments.map((d, i) => <option key={i} value={d}>{d}</option>)}
                   </select>
                 </div>
 
-                {/* Assign To (Kim uchun) */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{t.assignTo}</label>
-                  <select className="w-full bg-white dark:bg-slate-900 border-none h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-4" value={form.assignedUser} onChange={e => set('assignedUser', e.target.value)}>
-                    <option value="">{t.allUsers}</option>
+                {/* Assign To */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 block">{t.assignTo || "Mas'ul shaxs"}</label>
+                  <select className="input h-10 text-xs font-medium" value={form.assignedUser} onChange={e => set('assignedUser', e.target.value)}>
+                    <option value="">{t.allUsers || "Tanlanmagan"}</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>)}
                   </select>
                 </div>
 
-                {/* Observer (Tekshiruvchi) */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Eye size={13} className="text-primary-500" /> {t.observer}
+                {/* Observer */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+                    <Eye size={13} className="text-primary-500" /> 
+                    <span>{t.observer || "Kuzatuvchi"}</span>
                   </label>
-                  <select className="w-full bg-white dark:bg-slate-900 border border-primary-100 dark:border-primary-900/30 h-11 text-xs font-bold rounded-xl shadow-sm dark:text-white px-4" value={form.observer} onChange={e => set('observer', e.target.value)}>
-                    <option value="">{t.allUsers}</option>
+                  <select className="input h-10 text-xs font-medium" value={form.observer} onChange={e => set('observer', e.target.value)}>
+                    <option value="">{t.allUsers || "Tanlanmagan"}</option>
                     {users.map(u => <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>)}
                   </select>
                 </div>
               </div>
 
               {/* Subtasks (To-Do) */}
-              <div className="space-y-4 px-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t.subtasksTitle}</label>
-                  <button type="button" onClick={() => set('subtasks', [...form.subtasks, { id: Date.now(), text: '', done: false }])} className="text-[9px] font-black bg-slate-800 dark:bg-slate-700 text-white px-3 py-1.5 rounded-lg hover:bg-black transition-all">{t.add}</button>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {t.subtasksTitle || "Qism vazifalar"}
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={() => set('subtasks', [...form.subtasks, { id: Date.now(), text: '', done: false }])} 
+                    className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+                  >
+                    <Plus size={13} />
+                    <span>{t.add || "Qo'shish"}</span>
+                  </button>
                 </div>
-                <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
                   {form.subtasks.map((st) => (
-                    <div key={st.id} className="flex items-center gap-3 group animate-in slide-in-from-right-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
+                    <div key={st.id} className="flex items-center gap-2">
                       <input 
-                        className="w-full bg-slate-50 dark:bg-slate-800 border-none h-10 text-xs font-medium px-4 rounded-xl focus:ring-1 focus:ring-primary-500 dark:text-slate-300" 
+                        className="input h-9 text-xs flex-1" 
                         value={st.text} 
                         onChange={e => set('subtasks', form.subtasks.map(s => s.id === st.id ? { ...s, text: e.target.value } : s))} 
-                        placeholder={t.subtaskPlaceholder} 
+                        placeholder={t.subtaskPlaceholder || "Qadam nomi..."} 
                       />
-                      <button type="button" onClick={() => set('subtasks', form.subtasks.filter(s => s.id !== st.id))} className="text-slate-300 hover:text-red-500 transition-colors">
-                        <Trash2 size={18} />
+                      <button 
+                        type="button" 
+                        onClick={() => set('subtasks', form.subtasks.filter(s => s.id !== st.id))} 
+                        className="text-slate-400 hover:text-rose-500 transition-colors p-1"
+                      >
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   ))}
@@ -288,20 +343,20 @@ export default function TaskModal({ task, onClose }) {
         </form>
 
         {/* FOOTER */}
-        <div className="px-10 py-6 border-t bg-slate-50 dark:bg-slate-900/50 flex justify-end items-center gap-4">
+        <div className="px-6 py-4 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900 flex justify-end items-center gap-3">
           <button 
             type="button" 
             onClick={() => onClose(false)} 
-            className="px-8 py-3 rounded-2xl font-black text-[12px] uppercase text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            className="btn-secondary py-2 px-4 text-xs font-semibold"
           >
-            {t.cancel}
+            {t.cancel || "Bekor qilish"}
           </button>
           <button 
             onClick={handleSubmit} 
             disabled={isUploading} 
-            className="px-12 py-3 rounded-2xl font-black text-[12px] uppercase bg-[#00aeef] text-white shadow-xl shadow-blue-500/20 hover:bg-blue-500 disabled:opacity-50 transition-all"
+            className="btn-primary py-2 px-5 text-xs font-bold"
           >
-            {isUploading ? t.processing : t.save}
+            {isUploading ? (t.processing || "Yuklanmoqda...") : (t.save || "Saqlash")}
           </button>
         </div>
       </div>

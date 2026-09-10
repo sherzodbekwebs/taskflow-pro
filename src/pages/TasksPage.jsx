@@ -130,69 +130,125 @@ export default function TasksPage() {
     <div className="w-full pb-10">
 
       <div className="pb-4 print:hidden">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] p-4 sm:p-5 space-y-5 transition-colors shadow-none">
+        <div className="card p-5 space-y-4">
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-baseline gap-2 sm:gap-3 truncate">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white leading-none truncate">
-                  {t.tasks}
-                </h1>
-                <div className="hidden xs:flex items-center gap-1.5 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md border border-green-100 dark:border-green-800/30">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[9px] font-black text-green-600 dark:text-green-400 uppercase tracking-tighter">Live</span>
-                </div>
-              </div>
-              <span className="hidden md:inline text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-100 dark:border-slate-700">
-                {filtered.length} {t.operationsCountLabel || "та"}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {t.tasks || "Vazifalar"}
+              </h1>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700">
+                {filtered.length} {t.operationsCountLabel || "ta"}
               </span>
+              <div className="hidden xs:flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40 text-[11px] font-bold">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{t.liveIndicator || (language === 'uz' ? "Jonli" : "В сети")}</span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0 flex-nowrap">
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
               {view === 'table' && (
                 <button
                   onClick={handlePrint}
-                  title={t.print || "Чоп etish"}
-                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-500 hover:text-primary-500 border border-slate-100 dark:border-slate-700 transition-all"
+                  title={t.print || "Chop etish"}
+                  className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
                 >
-                  <Printer size={18} />
+                  <Printer size={17} />
                 </button>
               )}
 
-              <div className="flex bg-slate-50 dark:bg-slate-800 rounded-xl p-1 border border-slate-100 dark:border-slate-700 shadow-none">
-                <button title={t.kanban || "Канбан"} onClick={() => setView('kanban')} className={`p-1.5 rounded-lg transition-all ${view === 'kanban' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><LayoutGrid size={16} /></button>
-                <button title={t.listView || "Рўйхат"} onClick={() => setView('list')} className={`p-1.5 rounded-lg transition-all ${view === 'list' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><List size={16} /></button>
-                <button title={t.tableView || "Жадвал"} onClick={() => setView('table')} className={`p-1.5 rounded-lg transition-all ${view === 'table' ? 'bg-white dark:bg-slate-700 text-primary-500 shadow-sm' : 'text-slate-400'}`}><TableProperties size={16} /></button>
+              {/* View switch buttons */}
+              <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200/70 dark:border-slate-700">
+                <button 
+                  title={t.kanban || "Kanban"} 
+                  onClick={() => setView('kanban')} 
+                  className={`p-1.5 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    view === 'kanban' 
+                      ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs' 
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <LayoutGrid size={15} />
+                  <span className="hidden md:inline">{t.kanbanBoard || (language === 'uz' ? "Doska" : "Доска")}</span>
+                </button>
+                <button 
+                  title={t.listView || "Ro'yxat"} 
+                  onClick={() => setView('list')} 
+                  className={`p-1.5 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    view === 'list' 
+                      ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs' 
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <List size={15} />
+                  <span className="hidden md:inline">{t.cards || (language === 'uz' ? "Kartalar" : "Карточки")}</span>
+                </button>
+                <button 
+                  title={t.tableView || "Jadval"} 
+                  onClick={() => setView('table')} 
+                  className={`p-1.5 px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                    view === 'table' 
+                      ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-xs' 
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <TableProperties size={15} />
+                  <span className="hidden md:inline">{t.tableView || (language === 'uz' ? "Jadval" : "Таблица")}</span>
+                </button>
               </div>
-              <button onClick={() => handleAddTask()} className="btn-primary h-10 px-3 sm:px-5 rounded-xl shadow-lg shadow-primary-500/10 font-bold text-[11px] sm:text-xs uppercase whitespace-nowrap">
-                <Plus size={16} /> <span className="hidden sm:inline">{t.addTask}</span>
+
+              <button 
+                onClick={() => handleAddTask()} 
+                className="btn-primary py-2 px-4 rounded-xl text-xs font-bold"
+              >
+                <Plus size={16} /> 
+                <span>{t.addTask || "Yangi vazifa"}</span>
               </button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-50 dark:border-slate-800/50">
-            <div className="relative flex-1 min-w-[150px]">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input className="input pl-9 text-xs h-10 bg-slate-50 dark:bg-slate-800 border-transparent focus:bg-white focus:border-slate-200" placeholder={t.searchPlaceholder || "Қидирув..."} value={search} onChange={e => setSearch(e.target.value)} />
+          {/* Search and Filters */}
+          <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                className="input pl-10 text-xs h-10" 
+                placeholder={t.searchPlaceholder || "Vazifalarni izlash..."} 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+              />
             </div>
 
             <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-              <select className="input w-auto text-[11px] font-bold py-2 px-4 h-10 bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-                <option value="all">{t.allStatuses || "Ҳамма ҳолатлар"}</option>
+              <select 
+                className="input w-auto text-xs font-medium py-2 px-3 h-10" 
+                value={filterStatus} 
+                onChange={e => setFilterStatus(e.target.value)}
+              >
+                <option value="all">{t.allStatuses || "Barcha holatlar"}</option>
                 <option value="new">{statusLabels.new}</option>
                 <option value="progress">{statusLabels.progress}</option>
                 <option value="review">{statusLabels.review}</option>
                 <option value="done">{statusLabels.done}</option>
               </select>
 
-              <select className="input w-auto text-[11px] font-bold py-2 px-4 h-10 bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800" value={filterUser} onChange={e => setFilterUser(e.target.value)}>
-                <option value="all">{t.allAssignees || "Ҳамма ижрочилар"}</option>
+              <select 
+                className="input w-auto text-xs font-medium py-2 px-3 h-10" 
+                value={filterUser} 
+                onChange={e => setFilterUser(e.target.value)}
+              >
+                <option value="all">{t.allAssignees || "Barcha mas'ullar"}</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.fullName || u.fullname}</option>)}
               </select>
 
               {(search || filterStatus !== 'all' || filterUser !== 'all') && (
-                <button onClick={clearFilters} className="p-2.5 rounded-xl bg-red-50 text-red-500 border border-red-100">
-                  <X size={16} />
+                <button 
+                  onClick={clearFilters} 
+                  title={t.clearFilters || (language === 'uz' ? "Filtrlarni tozalash" : "Сбросить фильтры")}
+                  className="h-10 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 flex items-center gap-1 text-xs font-semibold transition-colors"
+                >
+                  <X size={15} />
+                  <span>{t.clear || (language === 'uz' ? "Tozalash" : "Очистить")}</span>
                 </button>
               )}
             </div>
@@ -213,41 +269,41 @@ export default function TasksPage() {
               ))}
             </div>
           ) : (
-            <div id="print-area" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[0.7rem] overflow-hidden mt-1 mx-1 shadow-none print:border-none print:m-0">
-              <table className="w-full text-left border-collapse min-w-[600px] print:text-[12pt]">
+            <div id="print-area" className="card overflow-hidden mt-1 shadow-none print:border-none print:m-0">
+              <table className="w-full text-left border-collapse min-w-[650px] print:text-[12pt]">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 print:bg-slate-100">
-                    <th className="px-4 py-4 w-12 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center print:text-black">№</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">{t.taskName || "Вазифа номи"}</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">{t.responsible || "Масъул"}</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest print:text-black">{t.createdAt || "Яратилган вақти"}</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right print:text-black">{t.deadline || "Муддат"}</th>
+                  <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200/70 dark:border-slate-800 print:bg-slate-100">
+                    <th className="px-4 py-3.5 w-12 text-[11px] font-extrabold uppercase text-slate-400 tracking-wider text-center print:text-black">№</th>
+                    <th className="px-6 py-3.5 text-[11px] font-extrabold uppercase text-slate-400 tracking-wider print:text-black">{t.taskName || "Vazifa nomi"}</th>
+                    <th className="px-6 py-3.5 text-[11px] font-extrabold uppercase text-slate-400 tracking-wider print:text-black">{t.responsible || "Mas'ul"}</th>
+                    <th className="px-6 py-3.5 text-[11px] font-extrabold uppercase text-slate-400 tracking-wider print:text-black">{t.createdAt || "Yaratilgan vaqti"}</th>
+                    <th className="px-6 py-3.5 text-[11px] font-extrabold uppercase text-slate-400 tracking-wider text-right print:text-black">{t.deadline || "Muddat"}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                   {filtered.map((task, index) => {
                     const assigned = users.find(u => String(u.id) === String(task.assignedUser));
                     return (
                       <tr key={task.id}
                         onClick={() => { setEditTask(task); setShowModal(true); }}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-colors group print:break-inside-avoid"
+                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group print:break-inside-avoid"
                       >
-                        <td className="px-4 py-4 text-center text-xs font-bold text-slate-400 print:text-black">
+                        <td className="px-4 py-4 text-center text-xs font-semibold text-slate-400 print:text-black">
                           {index + 1}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-4">
-                            <div className={`w-2 h-10 rounded-full shrink-0 ${getStatusColor(task.status)} print:hidden shadow-sm`} />
-                            <div className="flex flex-col gap-1">
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 group-hover:text-primary-500 transition-colors print:text-black leading-tight">
+                          <div className="flex items-center gap-3.5">
+                            <div className={`w-2 h-9 rounded-full shrink-0 ${getStatusColor(task.status)} print:hidden`} />
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <span className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors print:text-black leading-snug truncate max-w-[320px]">
                                 {task.title}
                               </span>
                               <div className="flex items-center gap-2">
-                                <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter text-white ${getStatusColor(task.status)}`}>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-tight text-white ${getStatusColor(task.status)}`}>
                                   {statusLabels[task.status]}
                                 </span>
                                 {task.department && (
-                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                                  <span className="text-[11px] text-slate-400">
                                     • {task.department}
                                   </span>
                                 )}
@@ -256,18 +312,18 @@ export default function TasksPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black text-slate-500 print:hidden">
-                              {(assigned?.fullName || assigned?.fullname || "?")[0]}
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-950/60 flex items-center justify-center text-[11px] font-extrabold text-primary-600 dark:text-primary-400 print:hidden border border-primary-200/50 dark:border-primary-800/40">
+                              {(assigned?.fullName || assigned?.fullname || "?")[0].toUpperCase()}
                             </div>
-                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 print:text-black">
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 print:text-black">
                               {assigned?.fullName || assigned?.fullname || "—"}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-300 print:text-black">
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 print:text-black">
                               {task.created_at ? format(new Date(task.created_at), 'dd.MM.yyyy') : "—"}
                             </span>
                             <span className="text-[10px] text-slate-400">
@@ -276,9 +332,9 @@ export default function TasksPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 print:border-none print:bg-transparent">
-                            {task.is_recurring ? <RefreshCw size={14} className="text-primary-500 print:hidden" /> : <CalendarIcon size={14} className="text-slate-400 print:hidden" />}
-                            <span className={`text-[11px] font-bold ${task.is_recurring ? 'text-primary-600' : 'text-slate-500'} print:text-black print:text-[10pt]`}>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-semibold print:border-none print:bg-transparent">
+                            {task.is_recurring ? <RefreshCw size={13} className="text-primary-500 print:hidden" /> : <CalendarIcon size={13} className="text-slate-400 print:hidden" />}
+                            <span className={`${task.is_recurring ? 'text-primary-600 dark:text-primary-400 font-bold' : 'text-slate-600 dark:text-slate-300'} print:text-black`}>
                               {getDeadlineDisplay(task)}
                             </span>
                           </div>
@@ -292,8 +348,8 @@ export default function TasksPage() {
           )}
 
           {filtered.length === 0 && (
-            <div className="py-20 text-center opacity-30 print:hidden">
-              <p className="text-sm font-bold uppercase tracking-widest">{t.noTasksFound || "Маълумот мавжуд эмас"}</p>
+            <div className="py-20 text-center text-slate-400 print:hidden">
+              <p className="text-sm font-semibold">{t.noTasksFound || "Hech qanday vazifa topilmadi"}</p>
             </div>
           )}
         </div>
@@ -307,16 +363,18 @@ export default function TasksPage() {
       )}
 
       {taskToDelete && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 animate-fade-in print:hidden">
-          <div className="bg-white dark:bg-slate-800 rounded-[1rem] p-8 max-w-sm w-full shadow-2xl text-center border border-slate-100">
-            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-100"><AlertTriangle size={32} /></div>
-            <h3 className="text-xl font-bold dark:text-white mb-2">{t.confirmDeletion}</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 italic">
-               {t.deleteWarning?.replace('{title}', taskToDelete.title) || `"${taskToDelete.title}" вазифасини ўчирасизми?`}
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[110] flex items-center justify-center p-4 animate-fade-in print:hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-7 max-w-sm w-full shadow-2xl text-center border border-slate-200 dark:border-slate-700">
+            <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-900/40">
+              <AlertTriangle size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{t.confirmDeletion || "Vazifani o'chirish"}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
+               {t.deleteWarning?.replace('{title}', taskToDelete.title) || `"${taskToDelete.title}" vazifasini o'chirishni tasdiqlaysizmi?`}
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setTaskToDelete(null)} className="btn-secondary flex-1 py-3 font-bold">{t.no || "Йўқ"}</button>
-              <button onClick={confirmDelete} className="bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex-1 py-3 transition-all">{t.yes || "Ҳа"}</button>
+              <button onClick={() => setTaskToDelete(null)} className="btn-secondary flex-1 py-2.5 text-xs font-bold">{t.no || "Bekor qilish"}</button>
+              <button onClick={confirmDelete} className="bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl flex-1 py-2.5 text-xs transition-colors shadow-xs">{t.yes || "O'chirish"}</button>
             </div>
           </div>
         </div>

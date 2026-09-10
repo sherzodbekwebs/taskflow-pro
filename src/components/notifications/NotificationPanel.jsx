@@ -53,57 +53,57 @@ export default function NotificationPanel({ onClose }) {
       className="fixed sm:absolute left-4 right-4 sm:left-auto sm:right-0 top-[70px] sm:top-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[1.2rem] shadow-2xl z-[999] animate-fade-in overflow-hidden sm:w-[400px]"
     >
       {/* HEADER */}
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between">
-        <div>
-          <h3 className="font-black text-slate-900 dark:text-white text-xs uppercase tracking-widest">
-            {t.notifications}
+      <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="font-extrabold text-slate-900 dark:text-white text-xs uppercase tracking-wider">
+            {t.notifications || "Bildirishnomalar"}
           </h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
-             {notifications.filter(n => !n.read).length} та янги
-          </p>
+          <span className="text-[10px] bg-primary-50 dark:bg-primary-950/50 text-primary-600 dark:text-primary-400 font-bold px-1.5 py-0.2 rounded-md">
+             {notifications.filter(n => !n.read).length}
+          </span>
         </div>
         <div className="flex items-center gap-1">
           {notifications.some(n => !n.read) && (
             <button 
               onClick={markAllNotifRead} 
-              className="p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-primary-500 rounded-lg transition-colors"
-              title={t.markAllRead}
+              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-primary-600 rounded-lg transition-colors"
+              title={t.markAllRead || "Barchasini o'qilgan deb belgilash"}
             >
-              <CheckCheck size={18} />
+              <CheckCheck size={16} />
             </button>
           )}
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 rounded-lg">
-            <X size={18}/>
+          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
+            <X size={16}/>
           </button>
         </div>
       </div>
 
       {/* TELEGRAM BANNER */}
-      <div className="px-4 py-3">
+      <div className="p-3">
         <a 
           href="https://t.me/+RyIHMrYO0wUyMzgy" 
           target="_blank" 
           rel="noreferrer"
-          className="flex items-center gap-4 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl hover:shadow-lg transition-all"
+          className="flex items-center gap-3 p-3 bg-sky-50 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-900/50 text-sky-800 dark:text-sky-300 rounded-xl hover:bg-sky-100/70 transition-all group"
         >
-          <div className="bg-white/20 p-2.5 rounded-xl">
-            <Send size={18} className="rotate-12" />
+          <div className="bg-sky-500 text-white p-2 rounded-lg group-hover:scale-105 transition-transform">
+            <Send size={15} />
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-tight">Telegram Гуруҳ</p>
-            <p className="text-[10px] opacity-90 leading-tight">Янги хабарларни гуруҳда кузатинг</p>
+            <p className="text-xs font-bold text-sky-900 dark:text-sky-200">Telegram Kanal</p>
+            <p className="text-[11px] text-sky-600 dark:text-sky-400 font-medium leading-tight">Yangi topshiriqlar va yangiliklar kanali</p>
           </div>
         </a>
       </div>
       
       {/* LIST */}
-      <div className="max-h-[60vh] sm:max-h-[450px] overflow-y-auto custom-scrollbar">
+      <div className="max-h-[60vh] sm:max-h-[420px] overflow-y-auto custom-scrollbar">
         {sortedNotifications.length === 0 ? (
-          <div className="flex flex-col items-center py-16 text-slate-400">
-            <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mb-4">
-               <Bell size={32} className="opacity-20" />
+          <div className="flex flex-col items-center py-12 text-slate-400">
+            <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-3">
+               <Bell size={22} className="opacity-30" />
             </div>
-            <p className="text-[11px] font-black uppercase tracking-widest">Билдиришномалар йўқ</p>
+            <p className="text-xs font-semibold">Bildirishnomalar mavjud emas</p>
           </div>
         ) : (
           sortedNotifications.map(notif => {
@@ -113,24 +113,24 @@ export default function NotificationPanel({ onClose }) {
               <button
                 key={notif.id}
                 onClick={() => markNotifRead(notif.id)}
-                className={`w-full flex items-start gap-4 px-5 py-5 border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-all text-left group ${!notif.read ? 'bg-primary-500/[0.03]' : ''}`}
+                className={`w-full flex items-start gap-3 px-4 py-3 border-b border-slate-50 dark:border-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-left group ${!notif.read ? 'bg-primary-500/[0.04]' : ''}`}
               >
-                <div className={`flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center ${colorClass} shadow-sm group-hover:scale-110 transition-transform`}>
-                  <Icon size={20} />
+                <div className={`shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${colorClass} mt-0.5`}>
+                  <Icon size={15} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <p className={`text-[13px] font-bold leading-tight truncate ${!notif.read ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <p className={`text-xs font-bold truncate ${!notif.read ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
                       {notif.title}
                     </p>
                     {!notif.read && (
-                      <div className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(76,110,245,0.6)]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-600 shrink-0" />
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-2 leading-relaxed mb-2 tracking-tight">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-1">
                     {notif.message}
                   </p>
-                  <p className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-tighter">
+                  <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                     {notif.createdAt ? formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true, locale: uz }) : ''}
                   </p>
                 </div>
@@ -142,8 +142,8 @@ export default function NotificationPanel({ onClose }) {
 
       {/* FOOTER */}
       {sortedNotifications.length > 0 && (
-        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/20 text-center border-t border-slate-100 dark:border-slate-700">
-           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[2px]">TaskFlow Notifications</p>
+        <div className="py-2.5 px-4 bg-slate-50/70 dark:bg-slate-900/60 text-center border-t border-slate-100 dark:border-slate-800">
+           <p className="text-[10px] text-slate-400 font-semibold tracking-wider">TaskFlow Bildirishnomalar</p>
         </div>
       )}
     </div>

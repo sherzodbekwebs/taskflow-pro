@@ -269,8 +269,10 @@ export function AppProvider({ children }) {
   };
 
   const moveTask = async (tid, ns) => {
-    // MUNISA LOGIKASI
     const targetTask = tasks.find(t => String(t.id) === String(tid));
+    if (!targetTask) return;
+
+    // MUNISA LOGIKASI
     const isMunisa = currentUser?.username === 'Munisa';
     const isOwnTask = String(targetTask?.assignedUser) === String(currentUser?.id);
 
@@ -279,32 +281,54 @@ export function AppProvider({ children }) {
       return; // Jarayonni to'xtatish
     }
 
-    setIsActionLoading(true);
-    try {
-      let targetStatus = ns;
-      if (targetStatus === 'done' && !hasAccess) targetStatus = 'review';
+    let targetStatus = ns;
+    if (targetStatus === 'done' && !hasAccess) targetStatus = 'review';
+    if (targetTask.status === targetStatus) return;
 
+    const previousTasks = [...tasks];
+    const nowIso = new Date().toISOString();
+
+    // 1. OPTIMISTIK YANGILANISH: UI da kartochka DARHOL yangi ustunga ko'chadi
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (String(t.id) === String(tid)) {
+        return {
+          ...t,
+          status: targetStatus,
+          completed: targetStatus === 'done',
+          updated_at: nowIso
+        };
+      }
+      return t;
+    }));
+
+    try {
       const updates = {
         status: targetStatus,
         completed: targetStatus === 'done',
-        updated_at: new Date().toISOString()
+        updated_at: nowIso
       };
 
       const updatedRecord = await TaskService.update(tid, updates);
-      await refreshData();
+      
+      if (updatedRecord && updatedRecord.id) {
+        setTasks(prevTasks => prevTasks.map(t => 
+          String(t.id) === String(updatedRecord.id) ? { ...t, ...updatedRecord } : t
+        ));
+      }
+
       showToast(targetStatus === 'review' ? "Вазифа текширувга юборилди" : "Ўзгаришлар сақланди");
 
       // sherzod vazifani ko'chirsa/yangilasa Telegram bildirishnomasi yuborilmaydi
       const isSherzod = currentUser?.username === 'sherzod';
-      const assigned = users.find(u => String(u.id) === String(updatedRecord.assignedUser));
+      const assigned = users.find(u => String(u.id) === String(updatedRecord?.assignedUser || targetTask.assignedUser));
       if (assigned && !isSherzod) {
-        TelegramService.sendNotification(updatedRecord, assigned, 'update').catch(e => console.error("TG error:", e));
+        TelegramService.sendNotification(updatedRecord || { ...targetTask, ...updates }, assigned, 'update').catch(e => console.error("TG error:", e));
       }
     } catch (err) {
       console.error("MoveTask xatosi:", err);
+      // Xatolik yuz bersa avvalgi holatga qaytaramiz
+      setTasks(previousTasks);
       showToast("Xato yuz berdi");
-    } finally {
-      setIsActionLoading(false);
     }
   };
 
@@ -324,14 +348,28 @@ export function AppProvider({ children }) {
   };
 
   const toggleSubtask = async (tid, sid) => {
-    setIsActionLoading(true);
+    // 1. Optimistik darhol UI yangilash
+    setTasks(prevTasks => prevTasks.map(t => {
+      if (String(t.id) !== String(tid)) return t;
+      const updatedSubtasks = (t.subtasks || []).map(st => {
+        if (String(st.id) !== String(sid)) return st;
+        return { ...st, done: !st.done };
+      });
+      return { ...t, subtasks: updatedSubtasks };
+    }));
+
     try {
-      await TaskService.toggleSubtask(tid, sid);
-      await refreshData();
+      const updatedTask = await TaskService.toggleSubtask(tid, sid);
+      if (updatedTask && updatedTask.id) {
+        setTasks(prevTasks => prevTasks.map(t => String(t.id) === String(updatedTask.id) ? { ...t, ...updatedTask } : t));
+      }
+      return updatedTask;
     } catch (err) {
-      console.error(err);
-    } finally {
-      setIsActionLoading(false);
+      console.error("toggleSubtask error:", err);
+      // Xatolik yuz bersa bazadagi haqiqiy holatga qaytarish
+      await refreshData();
+      showToast(language === 'uz' ? "Holatni o'zgartirishda xatolik" : "Ошибка изменения состояния");
+      throw err;
     }
   };
 
@@ -448,7 +486,7 @@ export function AppProvider({ children }) {
         await refreshData();
       }
       return res;
-    } catch (err) {
+    } catch {
       showToast("Username yoki parol xato");
       return null;
     } finally {
@@ -495,4 +533,5 @@ export function AppProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useApp = () => useContext(AppContext);

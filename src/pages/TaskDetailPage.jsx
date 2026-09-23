@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import TaskModal from '../components/tasks/TaskModal';
 import {
   ArrowLeft, Calendar, User, AlignLeft,
-  CheckCircle2, Circle, Paperclip, FileText, Download, X, Eye, Edit3, Trash2, ShieldAlert, RefreshCw, Check, Undo2, Layers, CheckCircle
+  CheckCircle2, Circle, Paperclip, FileText, Download, X, Eye, Edit3, Trash2, ShieldAlert, RefreshCw, Check, Undo2, Layers, CheckCircle, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { uz, ru } from 'date-fns/locale';
@@ -16,7 +16,7 @@ export default function TaskDetailPage() {
   const {
     tasks, users, toggleSubtask, currentUser, isSuperAdmin,
     hasAccess, deleteTask, approveTask, rejectTask,
-    updateTask, moveTask, isActionLoading, language, t
+    moveTask, isActionLoading, language, t
   } = useApp();
 
   const task = useMemo(() => tasks.find(t => String(t.id) === String(id)), [id, tasks]);
@@ -27,6 +27,23 @@ export default function TaskDetailPage() {
   const [showNoPerm, setShowNoPerm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
+  const [syncingSubtasks, setSyncingSubtasks] = useState({});
+
+  const handleToggleSubtask = async (taskId, subtaskId) => {
+    if (syncingSubtasks[subtaskId]) return;
+    setSyncingSubtasks(prev => ({ ...prev, [subtaskId]: true }));
+    try {
+      await toggleSubtask(taskId, subtaskId);
+    } catch (err) {
+      console.error("Subtask toggle error:", err);
+    } finally {
+      setSyncingSubtasks(prev => {
+        const next = { ...prev };
+        delete next[subtaskId];
+        return next;
+      });
+    }
+  };
 
   if (!task) return null;
 
@@ -325,25 +342,53 @@ export default function TaskDetailPage() {
 
               <div className="p-4 space-y-2">
                 {task.subtasks && task.subtasks.length > 0 ? (
-                  task.subtasks.map((st, idx) => (
-                    <button 
-                      key={st.id || idx} 
-                      onClick={() => toggleSubtask(task.id, st.id)} 
-                      disabled={isActionLoading}
-                      className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left ${
-                        st.done 
-                          ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-300' 
-                          : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-primary-300 text-slate-700 dark:text-slate-200'
-                      }`}
-                    >
-                      <div className={`mt-0.5 flex-shrink-0 ${st.done ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-300 dark:text-slate-600'}`}>
-                        {st.done ? <CheckCircle2 size={17} /> : <Circle size={17} />}
-                      </div>
-                      <span className={`text-xs font-medium leading-relaxed flex-1 ${st.done ? 'line-through opacity-75' : ''}`}>
-                        {st.text}
-                      </span>
-                    </button>
-                  ))
+                  task.subtasks.map((st, idx) => {
+                    const isSyncing = Boolean(syncingSubtasks[st.id]);
+                    return (
+                      <button 
+                        key={st.id || idx} 
+                        onClick={() => handleToggleSubtask(task.id, st.id)} 
+                        disabled={isSyncing}
+                        className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl border transition-all text-left group ${
+                          st.done 
+                            ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-300' 
+                            : 'bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-700 text-slate-700 dark:text-slate-200'
+                        } ${isSyncing ? 'opacity-85 cursor-wait' : 'cursor-pointer hover:shadow-xs active:scale-[0.99]'}`}
+                      >
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className={`mt-0.5 flex-shrink-0 transition-colors ${
+                            isSyncing 
+                              ? 'text-primary-500 dark:text-primary-400' 
+                              : st.done 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : 'text-slate-300 dark:text-slate-600 group-hover:text-primary-500'
+                          }`}>
+                            {isSyncing ? (
+                              <Loader2 size={17} className="animate-spin text-primary-500 dark:text-primary-400" />
+                            ) : st.done ? (
+                              <CheckCircle2 size={17} className="text-emerald-600 dark:text-emerald-400 transition-transform duration-150" />
+                            ) : (
+                              <Circle size={17} className="transition-transform duration-150 group-hover:scale-105" />
+                            )}
+                          </div>
+                          <span className={`text-xs font-medium leading-relaxed select-none transition-all ${
+                            st.done ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'
+                          }`}>
+                            {st.text}
+                          </span>
+                        </div>
+
+                        {isSyncing && (
+                          <div className="flex-shrink-0 flex items-center gap-1.5 pl-2">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/60 px-2 py-0.5 rounded-md border border-primary-200/60 dark:border-primary-800/60 animate-pulse">
+                              <Loader2 size={10} className="animate-spin" />
+                              <span>{language === 'uz' ? 'Saqlanmoqda...' : 'Сохранение...'}</span>
+                            </span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
                 ) : (
                   <div className="text-center py-10 text-slate-400 text-xs">
                     <Layers size={28} className="mx-auto mb-2 opacity-40" />

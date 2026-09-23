@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import TaskCard from './TaskCard';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask }) {
-  const { hasAccess, t, moveTask } = useApp();
+  const { t, moveTask } = useApp();
 
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverStatus, setDragOverStatus] = useState(null);
+  const draggedTaskRef = useRef(null);
 
   const columns = {
     new: { 
@@ -41,29 +42,43 @@ export default function KanbanBoard({ tasks, onAddTask, onEditTask, onDeleteTask
   };
 
   const handleDragStart = (task) => {
+    draggedTaskRef.current = String(task.id);
     setDraggedTaskId(task.id);
   };
 
   const handleDragEnd = () => {
     setDraggedTaskId(null);
     setDragOverStatus(null);
+    setTimeout(() => {
+      draggedTaskRef.current = null;
+    }, 150);
   };
 
   const handleDragOver = (e, status) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverStatus !== status) setDragOverStatus(status);
+    if (dragOverStatus !== status) {
+      setDragOverStatus(status);
+    }
   };
 
-  const handleDragLeave = (status) => {
-    if (dragOverStatus === status) setDragOverStatus(null);
+  const handleDragLeave = (e, status) => {
+    if (e.currentTarget && e.currentTarget.contains(e.relatedTarget)) return;
+    if (dragOverStatus === status) {
+      setDragOverStatus(null);
+    }
   };
 
   const handleDrop = (e, status) => {
     e.preventDefault();
-    const taskId = draggedTaskId;
+    e.stopPropagation();
+
+    const dataTransferId = e.dataTransfer ? e.dataTransfer.getData('text/plain') : null;
+    const taskId = dataTransferId || draggedTaskId || draggedTaskRef.current;
+
     setDraggedTaskId(null);
     setDragOverStatus(null);
+    draggedTaskRef.current = null;
 
     if (!taskId) return;
 

@@ -26,7 +26,7 @@ const StorageService = {
     try {
       localStorage.removeItem(PREFIX + key);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   },

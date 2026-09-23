@@ -22,7 +22,7 @@ const UserService = {
         tg_username: user.tg_username || '',
         bio: user.bio || ''
       };
-    } catch (e) {
+    } catch {
       return null;
     }
   },

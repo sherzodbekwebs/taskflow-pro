@@ -14,7 +14,7 @@ import { uz, ru } from 'date-fns/locale'; // Tilga qarab lokalni ham o'zgartiris
 
 export default function TasksPage() {
   const {
-    tasks, users, departments, t, language, deleteTask, isActionLoading, refreshData,
+    tasks, users, t, language, deleteTask, refreshData,
     taskFilters, setTaskFilters,
   } = useApp();
 

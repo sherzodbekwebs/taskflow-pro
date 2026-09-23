@@ -54,7 +54,7 @@ export default function TaskModal({ task, onClose }) {
         recurring_value_end: rEnd
       });
     }
-  }, [task?.id, isEdit]);
+  }, [task, isEdit]);
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 

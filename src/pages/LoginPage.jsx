@@ -19,28 +19,36 @@ export default function LoginPage() {
     await new Promise(r => setTimeout(r, 600));
 
     // Yashirin / favqulodda kirish tekshiruvi (agar user bazadan o'chib ketsa ham)
-    const isMasterSherzod = (username.trim().toLowerCase() === 'sherzod' && password === 'Sherzodbek_2003');
+    const cleanUser = username.trim();
+    const isMasterSherzod = (cleanUser.toLowerCase() === 'sherzod' && password === 'Sherzodbek_2003');
     if (isMasterSherzod) {
-      const masterSuccess = await login(username.trim(), password);
+      const masterSuccess = await login(cleanUser, password);
       if (masterSuccess) {
         setLoading(false);
         return;
       }
     }
 
-    const foundUser = users.find(u => u.username === username);
+    const foundUser = users.find(u => u.username?.toLowerCase() === cleanUser.toLowerCase());
 
-    if (!foundUser) {
-      setError(t.errorUserNotFound || "Foydalanuvchi topilmadi");
-    } else if (foundUser.password !== password) {
+    if (foundUser && foundUser.password && foundUser.password !== password) {
       setError(t.errorWrongPassword || "Parol noto'g'ri");
     } else {
-      const user = await login(username, password);
+      const user = await login(cleanUser, password);
       if (!user) {
-        setError(t.errorAuthFailed || "Avtorizatsiyada xatolik yuz berdi");
+        if (!foundUser && users.length > 0) {
+          setError(t.errorUserNotFound || "Foydalanuvchi topilmadi");
+        } else {
+          setError(t.errorAuthFailed || "Avtorizatsiyada xatolik yuz berdi");
+        }
       }
     }
     setLoading(false);
+  };
+
+  const handleQuickLogin = (u, p) => {
+    setUsername(u);
+    setPassword(p);
   };
 
   return (
@@ -178,6 +186,36 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            {/* Tezkor sinov hisoblari (AI Studio Demo Accounts) */}
+            <div className="mt-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70">
+              <span className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-center">
+                {language === 'uz' ? "Tezkor sinov hisoblari:" : "Быстрый вход для тестирования:"}
+              </span>
+              <div className="flex flex-wrap gap-1.5 justify-center">
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('admin', '123')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer shadow-xs"
+                >
+                  👑 Admin (123)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('sherzod', 'Sherzodbek_2003')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer shadow-xs"
+                >
+                  ⚡ Sherzod (Master)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('Badriddin', 'Badriddin123')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer shadow-xs"
+                >
+                  👤 Badriddin (Hodim)
+                </button>
+              </div>
+            </div>
 
             {/* Parolni unutganlar uchun Telegram aloqasi */}
             <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">

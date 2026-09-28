@@ -46,11 +46,6 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const handleQuickLogin = (u, p) => {
-    setUsername(u);
-    setPassword(p);
-  };
-
   return (
     <div className="min-h-screen w-full bg-slate-100/80 dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6 lg:p-10 font-sans">
       
@@ -186,36 +181,6 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
-
-            {/* Tezkor sinov hisoblari (AI Studio Demo Accounts) */}
-            <div className="mt-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/70">
-              <span className="block text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-center">
-                {language === 'uz' ? "Tezkor sinov hisoblari:" : "Быстрый вход для тестирования:"}
-              </span>
-              <div className="flex flex-wrap gap-1.5 justify-center">
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('admin', '123')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer shadow-xs"
-                >
-                  👑 Admin (123)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('sherzod', 'Sherzodbek_2003')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer shadow-xs"
-                >
-                  ⚡ Sherzod (Master)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin('Badriddin', 'Badriddin123')}
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white dark:bg-slate-700 hover:bg-primary-50 dark:hover:bg-primary-950/40 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors cursor-pointer shadow-xs"
-                >
-                  👤 Badriddin (Hodim)
-                </button>
-              </div>
-            </div>
 
             {/* Parolni unutganlar uchun Telegram aloqasi */}
             <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 text-center">
